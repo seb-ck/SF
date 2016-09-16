@@ -1,4 +1,10 @@
 <?php
+
+if (!empty($_GET['send']))
+{
+	ob_start();
+}
+
 header('Content-Type: text/html; charset=utf-8');
 ?>
 
@@ -22,7 +28,6 @@ define("SOAP_CLIENT_BASEDIR", "Force.com-Toolkit-for-PHP-master/soapclient");
 require_once (SOAP_CLIENT_BASEDIR.'/SforcePartnerClient.php');
 require_once (SOAP_CLIENT_BASEDIR.'/SforceHeaderOptions.php');
 
-
 /*
 	Case fields:
 	ID	ISDELETED	CASENUMBER	CONTACTID	ACCOUNTID	COMMUNITYID	PARENTID	SUPPLIEDNAME	SUPPLIEDEMAIL	SUPPLIEDPHONE	SUPPLIEDCOMPANY	TYPE	RECORDTYPEID	STATUS	REASON	ORIGIN	SUBJECT	PRIORITY	DESCRIPTION	ISCLOSED	CLOSEDDATE	ISESCALATED	OWNERID	CREATEDDATE	CREATEDBYID	LASTMODIFIEDDATE	LASTMODIFIEDBYID	SYSTEMMODSTAMP	LASTVIEWEDDATE	LASTREFERENCEDDATE	CREATORFULLPHOTOURL	CREATORSMALLPHOTOURL	CREATORNAME	
@@ -40,77 +45,118 @@ try
   $mySoapClient = $mySforceConnection->createConnection(SOAP_CLIENT_BASEDIR.'/partner.wsdl.xml');
   $mylogin = $mySforceConnection->login($USERNAME, $PASSWORD);
 	
-	$query = "SELECT Id, Subject, CaseNumber, ClosedDate, CreatedDate, OwnerId, AccountId, Status FROM Case WHERE OwnerId='00G24000000sbxJ' ORDER BY CreatedDate DESC";
-	$response = $mySforceConnection->query($query);
-
-	if (!empty($_GET['purge']))
-	{
-		$ids = array();
-	
-		foreach ($response as $c) 
-		{
-			$ids []= $c->Id;
-			
-			if (count($ids) == 100)
-			{
-				$mySforceConnection->delete($ids);
-				$ids = array();
-			}
-		}
-		
-		if (!empty($ids))
-			$mySforceConnection->delete($ids);
-	
-	
-	
-	
-	$query = "SELECT Id FROM EmailMessage WHERE Subject LIKE 'New case email notification. Case number %'";
+	$query = "SELECT id, Name, title__c FROM survey__c WHERE Actif__c =true";
 	$response = $mySforceConnection->query($query);
 	
-	$ids = array();
-	foreach ($response as $em) 
+	$surveyId = $response->current()->Id;
+	
+	$d1 = new DateTime();
+	$d1->sub(new DateInterval('P1D'));
+	$d1 = $d1->format('Y-m-d\TH:i:s\Z');	// 2016-01-01T00:00:00Z
+	
+	$d2 = new DateTime();
+	$d2->sub(new DateInterval('P8D'));
+	$d2 = $d2->format('Y-m-d\TH:i:s\Z');
+	
+	$query = "SELECT Id FROM Case WHERE TYPE='Technical Support' AND Status = 'Closed' AND Survey_Sent__c = False AND ClosedDate >= $d2 AND ClosedDate <= $d1 AND Contact.Email != '' ORDER BY ClosedDate DESC";
+	$response = $mySforceConnection->query($query);
+	$parentIds = '';
+	$casesIds = array();
+	$cases = array();
+	$owners = array();
+	$accounts = array();
+	$contactIds = array();
+	$now = new DateTime();
+	
+	foreach ($response as $record) 
 	{
-			$ids []= $em->Id;
-			
-			if (count($ids) == 50)
-			{
-				$mySforceConnection->delete($ids);
-				$ids = array();
-			}
-		}
-		
-		if (!empty($ids))
-			$mySforceConnection->delete($ids);
-		
-		header('location: spam.php');
-		exit;
+		$casesIds []= $record->Id;
 	}
 	
-	echo '<h1>' . $response->size . ' cases assigned to "SPAM" <button onclick="if (confirm(\'Are you sure?\')) window.location.href=\'?purge=1\';" style="margin-left: 100px;">Purge!</button></h1>';
+	$parentIds = implode("', '", $casesIds);
+	
+	$results = $mySforceConnection->retrieve('Id, Subject, CaseNumber, ClosedDate, CreatedDate, Owner.Alias, Account.Name, Status, Contact.Email', 'Case', $casesIds);
+	for ($i=0; $i<count($results); $i++)
+	{
+		$cases[$results[$i]->Id] = $results[$i];
+		$cases[$results[$i]->Id]->countEmails = 0;
+		$cases[$results[$i]->Id]->maxDate = null;
+	}
+	
+	echo '<h1>Surveys not sent (cases recently closed)</h1>';
 	
 	echo '<table border=1 cellspacing=0 id=results>';
+	echo '<thead>';
 	echo '<tr>';
 	echo '	<th>Case Number</th>';
 	echo '	<th>Subject</th>';
 	echo '	<th>Status</th>';
+	echo '	<th>Owner</th>';
+	echo '	<th>Account</th>';
+	echo '	<th>Contact email</th>';
 	echo '	<th>Creation date</th>';
+	echo '	<th>Closed date</th>';
 	echo '</tr>';
+	echo '</thead>';
 	
-	$cases = array();
+	echo '<tbody>';
 	
-	foreach ($response as $c) 
+	$cpt = 0;
+	foreach ($cases as $c)
 	{
-		echo '<tr>';
-		echo '<td><a href="https://eu5.salesforce.com/' . $c->Id . '">' . $c->fields->CaseNumber . '</a></td>';
-		echo '<td>' . $c->fields->Subject . '</td>';
-		echo '<td>' . $c->fields->Status . '</td>';
-		echo '<td>' . str_replace(array('T', '.000Z'), array(' ', ''), $c->fields->CreatedDate) . '</td>';
-		echo '</tr>';
+		$tr = '';
+		
+		$tr .= '<td><a href="https://eu5.salesforce.com/' . $c->Id . '">' . $c->fields->CaseNumber . '</a></td>';
+		$tr .= '<td>' . $c->fields->Subject . '</td>';
+		$tr .= '<td>' . $c->fields->Status . '</td>';
+		
+		if (!empty($c->fields->Owner->fields->Alias))
+			$tr .= '<td>' . $c->fields->Owner->fields->Alias . '</td>';
+		else
+			$tr .= '<td></td>';
+		
+		if (!empty($c->fields->Account->fields->Name))
+			$tr .= '<td>' . $c->fields->Account->fields->Name . '</td>';
+		else
+			$tr .= '<td></td>';
+		
+		if (!empty($c->fields->Contact->fields->Email))
+			$tr .= '<td>' . $c->fields->Contact->fields->Email . '</td>';
+		else
+			$tr .= '<td></td>';
+		
+		$tr .= '<td>' . str_replace(array('T', '.000Z'), array(' ', ''), $c->fields->CreatedDate) . '</td>';
+		$tr .= '<td>' . str_replace(array('T', '.000Z'), array(' ', ''), $c->fields->ClosedDate) . '</td>';
+		
+		$tr .= '</tr>';
+		
+		if ($cpt++%2)
+			$tr = '<tr class="odd">' . $tr;
+		else
+			$tr = '<tr>' . $tr;
+		
+		echo $tr;
+		
+		if (!empty($_GET['send']))
+		{
+			$case = new SObject();
+			$case->type = 'Case';
+			$case->Id = $c->Id;
+			$case->fields = new stdClass();
+			$case->fields->Survey_Sent__c = true; 
+			$case->fields->IDSurvey__c = $surveyId; 
+			
+			$mySforceConnection->update(array($case));
+		}
 	}
 	
+	echo '</tbody>';
 	echo '</table>';
+	echo '<br/><br/><br/>';
 } 
 catch (Exception $e) 
 {
   var_dump($e);
 }
+
+ob_end_clean();
