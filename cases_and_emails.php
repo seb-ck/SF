@@ -9,7 +9,10 @@ header('Content-Type: text/html; charset=utf-8');
 	#results .odd td { background: #eee; }
 	* { font-size: 13px; }
 	h2 a { font-size: 1.5em; }
+	h1 { font-size: 2.5em; }
 </style>
+
+<h1>SLA Warnings board</h1>
 
 <?php
 
@@ -71,6 +74,7 @@ try
 	$accounts = array();
 	$accountIds = array();
 	$now = new DateTime();
+	$totals = array('alert' => 0, 2 => 0, 7 => 0, 14 => 0, 31 => 0);
 	
 	foreach ($response as $record) 
 	{
@@ -207,11 +211,20 @@ try
 					continue;
 					
 				if ($diff > 30)
+				{
 					$tr .= '<td align="center"><img src="./31.png" title="Last staff reply was over a month ago" /></td>';
+					$totals[31]++;
+				}
 				else if ($diff > 14)
-					$tr .= '<td align="center"><img src="./14.gif" title="Last staff reply was at least two weeks ago" /></td>';
+				{
+					$tr .= '<td align="center"><img src="./14.png" title="Last staff reply was at least two weeks ago" /></td>';
+					$totals[14]++;
+				}
 				else
+				{
 					$tr .= '<td align="center"><img src="./7.png" title="Last staff reply was at least a week ago" /></td>';
+					$totals[7]++;
+				}
 			}
 			else
 			{
@@ -235,9 +248,15 @@ try
 					$tr .= '<td></td>';
 				
 				if ($diff < 5)
+				{
 					$tr .= '<td align="center"><img src="./2.png" title="Keyze created at least two working days ago but no staff reply yet" /></td>';
+					$totals[2]++;
+				}
 				else
+				{
 					$tr .= '<td align="center"><img src="./alert.png" title="Keyze created at least ONE WEEK ago but no staff reply yet" /></td>';
+					$totals['alert']++;
+				}
 			}
 			
 			$tr .= '</tr>';
@@ -252,8 +271,18 @@ try
 		
 		echo '</tbody>';
 		echo '</table>';
-		echo '<br/><br/><br/>';
+		echo '<br/>';
 	}
+	
+	echo '<table width="100%">';
+	echo '<tr>';
+	foreach ($totals as $i => $count)
+	{
+		echo "<td style='font-size: 30px; line-height: 30px;' valign=middle><img src='./$i.png' valign=bottom /> $count cases</td>";
+	}
+	echo '</tr>';
+	echo '</table>';
+	echo '<br/><br/><br/>';
 } 
 catch (Exception $e) 
 {
