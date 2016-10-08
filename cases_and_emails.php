@@ -1,24 +1,13 @@
 <?php
-header('Content-Type: text/html; charset=utf-8');
+require_once('conf.php');
+require_once('head.php');
 ?>
-
-<style>
-	#results, #results td, #results th { border: 1px solid grey; border-collapse: collapse; padding: 5px; }
-	#results { width: 100%; }
-	#results th { background: lightgrey; }
-	#results .odd td { background: #eee; }
-	* { font-size: 13px; }
-	h2 a { font-size: 1.5em; }
-	h1 { font-size: 2.5em; }
-</style>
 
 <h1>SLA Warnings board</h1>
 
 <?php
 
 set_time_limit(0);
-
-require_once('conf.php');
 
 define("SOAP_CLIENT_BASEDIR", "Force.com-Toolkit-for-PHP-master/soapclient");
 require_once (SOAP_CLIENT_BASEDIR.'/SforcePartnerClient.php');
@@ -40,29 +29,7 @@ try
   $mySforceConnection = new SforcePartnerClient();
   $mySoapClient = $mySforceConnection->createConnection(SOAP_CLIENT_BASEDIR.'/partner.wsdl.xml');
   $mylogin = $mySforceConnection->login($USERNAME, $PASSWORD);
-	
-	
-	
-	
-	if (!empty($_GET['debug']))
-	{
-	
-		$query = "SELECT ParentId, COUNT(Id) countId, MAX(MESSAGEDATE) maxDate FROM EmailMessage WHERE ParentId IN ('50024000009WRBMAA4') AND Incoming=false GROUP BY ParentId";
-		$response = $mySforceConnection->query($query);
-		
-		foreach ($response as $record) 
-		{
-			var_dump($record);
-		}
-		
-		
-		die;	
-	}
-	
-	
-	
-	
-	
+
 	$query = "SELECT Id FROM Case WHERE TYPE='Technical Support' AND STATUS IN ('Open', 'Assigned') AND OWNERID != '00G240000014Hsp' ORDER BY LASTMODIFIEDDATE DESC";
 	$response = $mySforceConnection->query($query);
 	$parentIds = '';
@@ -145,7 +112,7 @@ try
 	
 	foreach ($ownerIds as $ownerId => $owner)
 	{
-		echo '<table border=1 cellspacing=0 id=results>';
+		echo '<table id="results">';
 		echo '<thead>';
 		echo '<tr>';
 		echo '	<th colspan=11 align=left><span style="font-size: 1.5em">' . $owner . '</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(' . count($casesPerOwner[$ownerId]) . ' pending cases)</th>';

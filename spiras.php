@@ -1,21 +1,11 @@
 <?php
-header('Content-Type: text/html; charset=utf-8');
+require_once('conf.php');
+require_once('head.php');
 ?>
 
-<style>
-	#results, #results td, #results th { border: 1px solid grey; border-collapse: collapse; padding: 5px; }
-	#results { width: 100%; }
-	#results th { background: lightgrey; }
-	#results .odd td { background: #eee; }
-	* { font-size: 13px; }
-	h2 a { font-size: 1.5em; }
-</style>
+	<h1>Cases with linked incidents</h1>
 
 <?php
-
-set_time_limit(0);
-
-require_once('conf.php');
 
 define("SOAP_CLIENT_BASEDIR", "Force.com-Toolkit-for-PHP-master/soapclient");
 require_once (SOAP_CLIENT_BASEDIR.'/SforcePartnerClient.php');
@@ -37,16 +27,7 @@ try
   $mySforceConnection = new SforcePartnerClient();
   $mySoapClient = $mySforceConnection->createConnection(SOAP_CLIENT_BASEDIR.'/partner.wsdl.xml');
   $mylogin = $mySforceConnection->login($USERNAME, $PASSWORD);
-	
-	
-	/*
-	$fields = ($mySforceConnection->describeSObject('Case'));
-	foreach ($fields->fields as $f)
-			echo $f->name . '<br/>';
-	*/
-	
-	
-	
+
 	$query = "SELECT Id FROM Case WHERE TYPE='Technical Support' AND SPIRA__c != '' AND IsClosed = False AND Status NOT IN ('Waiting consultant', 'On hold') ORDER BY CreatedDate ASC";
 	$response = $mySforceConnection->query($query);
 	$parentIds = '';
@@ -63,27 +44,7 @@ try
 	{
 		$casesIds []= $record->Id;
 	}
-	
-	
-	/*
-	$casesIds = array_slice($casesIds, 0, 2);
-	
-	
-	$results = $mySforceConnection->retrieve('Id, AccountId, LastModifiedDate', 'Case', $casesIds);
-	
-	for ($i=0; $i<count($results); $i++)
-	{
-		$results[$i]->LastModifiedDate = $results[$i]->ClosedDate;
-		
-		$mySforceConnection->update(array($results[$i]));
-	}
-	
-	echo '<pre>';
-	print_r($mySforceConnection->describeSObject('Case'));
 
-	die;
-	*/
-	
 	$parentIds = implode("', '", $casesIds);
 	
 	$results = $mySforceConnection->retrieve('Id, Subject, CaseNumber, LASTMODIFIEDDATE, CreatedDate, OwnerId, SPIRA__c, Status', 'Case', $casesIds);
@@ -138,11 +99,18 @@ try
 	{
 		$cases[$record->fields->ParentId]->maxIncomingDate = $record->fields->maxDate;
 	}
+
+	$cpt = 0;
+	$toClose = 0;
+	$warnings = 0;
 	
-	//foreach ($ownerIds as $ownerId => $owner)
+	foreach ($ownerIds as $ownerId => $owner)
 	{
 		echo '<table border=1 cellspacing=0 id=results>';
 		echo '<thead>';
+		echo '<tr>';
+		echo '	<th colspan=11 align=left><span style="font-size: 1.5em">' . $owner . '</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(' . count($casesPerOwner[$ownerId]) . ' pending cases)</th>';
+		echo '</tr>';
 		echo '<tr>';
 		echo '	<th>Case Number</th>';
 		echo '	<th>Subject</th>';
@@ -156,14 +124,10 @@ try
 		echo '</thead>';
 		
 		echo '<tbody>';
-		
-		$cpt = 0;
-		$toClose = 0;
-		$warnings = 0;
-		
-		foreach ($cases as $c)
+
+		foreach ($casesPerOwner[$ownerId] as $id)
 		{
-			//$c = $cases[$id];
+			$c = $cases[$id];
 			
 			$tr = '';
 			
@@ -300,7 +264,8 @@ try
 				}
 				else
 				{
-					$tr .= '<td></td>';
+					//$tr .= '<td></td>';
+					continue;
 				}
 			}
 			
@@ -317,10 +282,11 @@ try
 		echo '</tbody>';
 		echo '</table>';
 		echo '<br/>';
-		echo '<p style="font-size: 30px; font-weight: bold; text-align: center;">' . $warnings . ' cases might need to be updated.</p>';
-		echo '<p style="font-size: 30px; font-weight: bold; text-align: center;">' . $toClose . ' cases might need to be closed.</p>';
-		echo '<br/><br/><br/>';
 	}
+
+	echo '<p style="font-size: 30px; font-weight: bold; text-align: center;">' . $warnings . ' cases might need to be updated.</p>';
+	echo '<p style="font-size: 30px; font-weight: bold; text-align: center;">' . $toClose . ' cases might need to be closed.</p>';
+	echo '<br/><br/><br/>';
 } 
 catch (Exception $e) 
 {
