@@ -50,7 +50,7 @@ try
 	
 	$parentIds = implode("', '", $casesIds);
 	
-	$results = $mySforceConnection->retrieve('Id, Subject, CaseNumber, LASTMODIFIEDDATE, CreatedDate, OwnerId, AccountId, Status', 'Case', $casesIds);
+	$results = $mySforceConnection->retrieve('Id, Subject, CaseNumber, LASTMODIFIEDDATE, CreatedDate, OwnerId, AccountId, Status, ISESCALATED', 'Case', $casesIds);
 	for ($i=0; $i<count($results); $i++)
 	{
 		$cases[$results[$i]->Id] = $results[$i];
@@ -140,8 +140,12 @@ try
 			$c = $cases[$id];
 			
 			$tr = '';
+
+			$escalated = '';
+			if ($c->fields->IsEscalated == 'true')
+				$escalated = '&nbsp;<img src="https://eu5.salesforce.com/img/func_icons/util/escalation12.gif" />';
 			
-			$tr .= '<td><a href="https://eu5.salesforce.com/' . $c->Id . '">' . $c->fields->CaseNumber . '</a></td>';
+			$tr .= '<td><a href="https://eu5.salesforce.com/' . $c->Id . '">' . $c->fields->CaseNumber . '</a>' . $escalated . '</td>';
 			$tr .= '<td>' . $c->fields->Subject . '</td>';
 			$tr .= '<td>' . $c->fields->Status . '</td>';
 			
