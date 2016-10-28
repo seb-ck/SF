@@ -121,7 +121,6 @@ try
 		echo '	<th>Case Number</th>';
 		echo '	<th>Subject</th>';
 		echo '	<th>Status</th>';
-		echo '	<th>Owner</th>';
 		echo '	<th>Account</th>';
 		echo '	<th>Creation date</th>';
 		echo '	<th>Last modification date</th>';
@@ -148,11 +147,6 @@ try
 			$tr .= '<td><a href="https://eu5.salesforce.com/' . $c->Id . '">' . $c->fields->CaseNumber . '</a>' . $escalated . '</td>';
 			$tr .= '<td>' . $c->fields->Subject . '</td>';
 			$tr .= '<td>' . $c->fields->Status . '</td>';
-			
-			if (!empty($ownerIds[$c->fields->OwnerId]))
-				$tr .= '<td>' . $ownerIds[$c->fields->OwnerId] . '</td>';
-			else
-				$tr .= '<td></td>';
 			
 			if (!empty($accountIds[$c->fields->AccountId]))
 				$tr .= '<td>' . $accountIds[$c->fields->AccountId] . '</td>';
