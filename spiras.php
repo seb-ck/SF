@@ -137,8 +137,8 @@ try
 		echo '	<th>Owner</th>';
 		echo '	<th>Incident status</th>';
 		echo '	<th>Targeted release</th>';
-		echo '	<th>Creation date</th>';
-		echo '	<th>Last modification date</th>';
+		echo '	<th>Case creation date</th>';
+		echo '	<th>Case last update date</th>';
 		echo '	<th>Warnings</th>';
 		echo '</tr>';
 		echo '</thead>';
