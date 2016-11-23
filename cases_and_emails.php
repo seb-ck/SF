@@ -68,7 +68,7 @@ try
 	$accounts = array();
 	$accountIds = array();
 	$now = new DateTime();
-	$totals = array('alert' => 0, 2 => 0, 7 => 0, 14 => 0, 31 => 0);
+	$totals = array('alert' => 0, 2 => 0, 7 => 0, 14 => 0, 31 => 0, 'feedback' => 0, 'trash' => 0);
 
 	foreach ($response as $record)
 	{
@@ -216,7 +216,11 @@ try
 
 				if ($c->fields->Status == 'Waiting consultant')
 				{
-					$tr .= '<td align="center"><img src="./feedback.png" title="Keyze has been waiting for consultant for at least two weeks" /></td>';
+					if ($diff < 60)
+						$tr .= '<td align="center"><img src="./feedback.png" title="Keyze has been waiting for consultant for at least two weeks" /></td>';
+					else
+						$tr .= '<td align="center"><img src="./trash.png" title="Keyze has been waiting for consultant for at least TWO MONTHS" /></td>';
+					$totals['feedback']++;
 				}
 				else
 				{
@@ -289,6 +293,12 @@ try
 		echo '</tbody>';
 		echo '</table>';
 		echo '<br/>';
+	}
+
+	if (empty($_GET['all']))
+	{
+		unset($totals['feedback']);
+		unset($totals['trash']);
 	}
 
 	echo '<table width="100%">';
