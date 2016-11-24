@@ -217,10 +217,15 @@ try
 				if ($c->fields->Status == 'Waiting consultant')
 				{
 					if ($diff < 60)
+					{
 						$tr .= '<td align="center"><img src="./feedback.png" title="Keyze has been waiting for consultant for at least two weeks" /></td>';
+						$totals['feedback']++;
+					}
 					else
+					{
 						$tr .= '<td align="center"><img src="./trash.png" title="Keyze has been waiting for consultant for at least TWO MONTHS" /></td>';
-					$totals['feedback']++;
+						$totals['trash']++;
+					}
 				}
 				else
 				{
