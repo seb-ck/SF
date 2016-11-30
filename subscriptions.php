@@ -30,7 +30,17 @@ try
   $mySoapClient = $mySforceConnection->createConnection(SOAP_CLIENT_BASEDIR.'/partner.wsdl.xml');
   $mylogin = $mySforceConnection->login($USERNAME, $PASSWORD);
 
-	$query = "SELECT Id, ParentId, SubscriberId FROM EntitySubscription WHERE Parent.type='Case'";
+	$filterOwner = '';
+	if (!empty($_GET['name']))
+	{
+		$owner = $mySforceConnection->query("SELECT Id FROM User WHERE Alias='" . strtoupper(filter_input(INPUT_GET, 'name', FILTER_SANITIZE_STRING)) . "'");
+		foreach ($owner as $o)
+		{
+			$filterOwner = " AND SubscriberId = '{$o->Id}'";
+		}
+	}
+
+	$query = "SELECT Id, ParentId, SubscriberId FROM EntitySubscription WHERE Parent.type='Case' $filterOwner";
 	//$query = "SELECT Id, ParentId, SubscriberId FROM EntitySubscription WHERE Parent.type='Case' AND SubscriberId='00524000000oP8K'"; // ID = SEB
 	$response = $mySforceConnection->query($query);
 	$parentIds = '';
