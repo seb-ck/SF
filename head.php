@@ -10,7 +10,7 @@ set_time_limit(0);
 		#results { width: 100%; }
 		#results th { background: lightgrey; }
 		#results .odd td { background: #eee; }
-		* { font-size: 13px; }
+		* { font-size: 13px; font-family: "Trebuchet MS", Helvetica, sans-serif; }
 		h2 a { font-size: 1.5em; }
 		h1 { font-size: 2.5em; }
 	</style>
