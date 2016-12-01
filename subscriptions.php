@@ -143,10 +143,10 @@ try
       $lastModifiedDate = DateTime::createFromFormat('Y-m-d\TH:i:s.000\Z', $c->LastModifiedDate);
       $diff = $lastModifiedDate->diff($now)->days;
 
-      if ($diff > 30)
+      if ($diff > 30 && ($c->fields->Status == 'Closed' || $c->fields->Status == 'Cancelled'))
         $oldCases []= $subs;
-      else
-			   echo $tr;
+
+      echo $tr;
 		}
 
 		echo '</tbody>';
