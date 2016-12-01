@@ -154,12 +154,13 @@ try
 		echo '<br/>';
 	}
 
-  //print_r($oldCases);die;
-
   if (!empty($_GET['purge']))
   {
     if (!empty($oldCases))
-      $mySforceConnection->delete($oldCases);
+    {
+      foreach (array_chunk($oldCases, 100) as $oldc)
+        $mySforceConnection->delete($oldc);
+    }
   }
 
 	echo '<br/><br/><br/>';
