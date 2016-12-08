@@ -38,8 +38,8 @@ try
 		}
 	}
 
-	$query = "SELECT Id FROM Case WHERE TYPE='Technical Support' AND SPIRA__c != '' AND IsClosed = False AND Status NOT IN ('Waiting consultant', 'On hold') ORDER BY CreatedDate ASC";
 	$query = "SELECT Id FROM Case WHERE TYPE='Technical Support' AND SPIRA__c != '' AND IsClosed = False AND Status NOT IN ('Waiting consultant', 'On hold') $filterOwner ORDER BY CreatedDate ASC";
+	$query = "SELECT Id FROM Case WHERE TYPE='Technical Support' AND SPIRA__c != '' $filterOwner ORDER BY CreatedDate ASC";
 	$response = $mySforceConnection->query($query);
 	$parentIds = '';
 	$casesIds = array();
@@ -128,7 +128,7 @@ try
 		echo '<table border=1 cellspacing=0 id=results>';
 		echo '<thead>';
 		echo '<tr>';
-		echo '	<th colspan=11 align=left><span style="font-size: 1.5em">' . $owner . '</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(' . count($casesPerOwner[$ownerId]) . ' cases with incident still pending)</th>';
+		echo '	<th colspan=11 align=left><span style="font-size: 1.5em">' . $owner . '</span></th>';
 		echo '</tr>';
 		echo '<tr>';
 		echo '	<th>Case Number</th>';
@@ -197,11 +197,11 @@ try
 						if ($data->StatusName !== 'Completed')
 							$allClosed = false;
 
-						if ($data->StatusName == 'Completed' || $data->StatusName == 'Rejected/Obsolete')
+						if ($data->StatusName == 'DONE' || $data->StatusName == 'REJECTED')
 							$minStatus = min($minStatus, 5);
-						else if ($data->StatusName == 'Dev Done' || $data->StatusName == 'Val in progress')
+						else if ($data->StatusName == 'VAL')
 							$minStatus = min($minStatus, 4);
-						else if ($data->StatusName == 'Val Done' || $data->StatusName == 'Doc & UAT')
+						else if ($data->StatusName == 'DEV')
 							$minStatus = min($minStatus, 3);
 						else
 							$minStatus = min($minStatus, 1);
@@ -288,6 +288,9 @@ try
 				}
 			}
 
+			if ($allClosed && ($c->fields->Status == 'Closed' || $c->fields->Status == 'Cancelled') )
+				continue;
+
 			if (empty($spiraHtml))
 				$spiraHtml = $c->fields->SPIRA__c;
 
@@ -314,7 +317,7 @@ try
 					|| ($minStatus >= 3 && $minStatus < 5 && $c->fields->Status != 'Waiting bug validation')
 					|| ($minStatus == 5 && $c->fields->Status != 'Waiting bug delivery'))
 				{
-					$tr .= '<td align=center><img src="gnome-status.png" title="Case status might need to be updated" /></td>';
+					$tr .= '<td align=center><img src="gnome-status.png" title="Status of case or incident might need to be updated" /></td>';
 					$warnings++;
 				}
 				else
@@ -339,6 +342,7 @@ try
 		echo '<br/>';
 	}
 
+	echo '<p style="font-size: 30px; font-weight: bold; text-align: center;">' . $cpt . ' cases with pending incidents, or incident with pending case.</p>';
 	echo '<p style="font-size: 30px; font-weight: bold; text-align: center;">' . $warnings . ' cases might need to be updated.</p>';
 	echo '<p style="font-size: 30px; font-weight: bold; text-align: center;">' . $toClose . ' cases might need to be closed.</p>';
 	echo '<br/><br/><br/>';
