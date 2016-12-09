@@ -11,6 +11,43 @@ define("SOAP_CLIENT_BASEDIR", "Force.com-Toolkit-for-PHP-master/soapclient");
 require_once (SOAP_CLIENT_BASEDIR.'/SforcePartnerClient.php');
 require_once (SOAP_CLIENT_BASEDIR.'/SforceHeaderOptions.php');
 
+function getSpiraIncident($incidentId) {
+        $query= 'select
+			*
+                        from
+                                 RPT_INCIDENTS
+                        left join RPT_CUSTOM_LIST_VALUES c2 on CAST(c2.CUSTOM_PROPERTY_VALUE_ID as varchar) = RPT_INCIDENTS.CUST_19
+			LEFT JOIN RPT_RELEASES ON RPT_RELEASES.RELEASE_ID = RPT_INCIDENTS.RESOLVED_RELEASE_ID
+                        where
+                                RPT_INCIDENTS.INCIDENT_ID=' . $incidentId;
+
+
+        $query_result = mssql_query($query);
+        $aRow = mssql_fetch_array($query_result, MSSQL_ASSOC);
+        if ($aRow)
+                return $aRow;
+        else
+                return null;
+}
+
+function getSpiraReq($reqId) {
+        $query = 'select
+				*
+                  from
+				RPT_REQUIREMENTS
+		FULL JOIN RPT_RELEASES ON RPT_RELEASES.RELEASE_ID = RPT_REQUIREMENTS.RELEASE_ID
+                  where
+				REQUIREMENT_ID = "' . $reqId . '"';
+
+        $query_result = mssql_query($query);
+        $aRow = mssql_fetch_array($query_result, MSSQL_ASSOC);
+        if ($aRow)
+                return $aRow;
+        else
+                return null;
+}
+
+
 /*
 	Case fields:
 	ID	ISDELETED	CASENUMBER	CONTACTID	ACCOUNTID	COMMUNITYID	PARENTID	SUPPLIEDNAME	SUPPLIEDEMAIL	SUPPLIEDPHONE	SUPPLIEDCOMPANY	TYPE	RECORDTYPEID	STATUS	REASON	ORIGIN	SUBJECT	PRIORITY	DESCRIPTION	ISCLOSED	CLOSEDDATE	ISESCALATED	OWNERID	CREATEDDATE	CREATEDBYID	LASTMODIFIEDDATE	LASTMODIFIEDBYID	SYSTEMMODSTAMP	LASTVIEWEDDATE	LASTREFERENCEDDATE	CREATORFULLPHOTOURL	CREATORSMALLPHOTOURL	CREATORNAME
@@ -24,9 +61,28 @@ require_once (SOAP_CLIENT_BASEDIR.'/SforceHeaderOptions.php');
 
 try
 {
-  $mySforceConnection = new SforcePartnerClient();
-  $mySoapClient = $mySforceConnection->createConnection(SOAP_CLIENT_BASEDIR.'/partner.wsdl.xml');
-  $mylogin = $mySforceConnection->login($USERNAME, $PASSWORD);
+	$mySforceConnection = new SforcePartnerClient();
+	$mySoapClient = $mySforceConnection->createConnection(SOAP_CLIENT_BASEDIR.'/partner.wsdl.xml');
+	$mylogin = $mySforceConnection->login($USERNAME, $PASSWORD);
+
+	$spiraConnection = mssql_connect($SPIRA_HOST, $SPIRA_USERNAME, $SPIRA_PASSWORD);
+	mssql_select_db($SPIRA_DATABASE, $spiraConnection);
+
+
+/*
+$query = "SELECT * FROM information_schema.tables";
+$query_result = mssql_query($query);
+while ($row = mssql_fetch_array($query_result, MSSQL_ASSOC))
+var_dump($row);
+
+$query = "exec sp_columns RPT_RELEASES";
+$query_result = mssql_query($query);
+while ($row = mssql_fetch_array($query_result, MSSQL_ASSOC))
+var_dump($row['COLUMN_NAME']);
+
+var_dump(getSpiraReq(7595));
+die;
+*/
 
 	$filterOwner = '';
 	if (!empty($_GET['name']))
@@ -63,7 +119,6 @@ try
 	for ($i=0; $i<count($results); $i++)
 	{
 		$cases[$results[$i]->Id] = $results[$i];
-		$cases[$results[$i]->Id]->countEmails = 0;
 		$cases[$results[$i]->Id]->maxDate = null;
 
 		if ($results[$i]->fields->OwnerId)
@@ -90,34 +145,6 @@ try
 	}
 
 	asort($ownerIds);
-
-	$data = @json_decode(file_get_contents("http://thefactory.crossknowledge.com/Services/v4_0/RestService.svc/projects?username=sebastien.fabre&api-key={35769756-F0B8-47B7-85F8-8A80380E88AC}"));
-	$projectIds = array();
-	foreach ($data as $projectData)
-	{
-		if (!in_array($projectData->ProjectId, array(14, 10, 8)))	// main projects, add them manually at the beginning of the array after
-			$projectIds []= $projectData->ProjectId;
-	}
-	array_unshift($projectIds, 14, 10, 8);
-
-	$query = "SELECT ParentId, COUNT(Id) countId, MAX(MESSAGEDATE) maxDate FROM EmailMessage WHERE ParentId IN ('$parentIds') AND Incoming=false GROUP BY ParentId";
-	$response = $mySforceConnection->query($query);
-	$ids = array();
-
-	foreach ($response as $record)
-	{
-		$cases[$record->fields->ParentId]->countEmails = $record->fields->countId;
-		$cases[$record->fields->ParentId]->maxOutgoingDate = $record->fields->maxDate;
-	}
-
-	$query = "SELECT ParentId, COUNT(Id) countId, MAX(MESSAGEDATE) maxDate FROM EmailMessage WHERE ParentId IN ('$parentIds') AND Incoming=true GROUP BY ParentId";
-	$response = $mySforceConnection->query($query);
-	$ids = array();
-
-	foreach ($response as $record)
-	{
-		$cases[$record->fields->ParentId]->maxIncomingDate = $record->fields->maxDate;
-	}
 
 	$cpt = 0;
 	$toClose = 0;
@@ -169,121 +196,77 @@ try
 
 			foreach ($spira as $incident)
 			{
-				if (preg_match('/\[RQ:(\d+)\]/', $incident, $matches))
+				if (preg_match('/\[RQ:(\d+)\]/', $incident, $matches) || preg_match('@.*thefactory.crossknowledge.com/(\d+)/Requirement/(\d+).*@', $incident, $matches))
 				{
 					$rq = $matches[1];
 
-					foreach ($projectIds as $project)
+
+					$releaseData = getSpiraReq($rq);
+					if (!empty($releaseData))
 					{
-						$data = @json_decode(file_get_contents("http://thefactory.crossknowledge.com/Services/v4_0/RestService.svc/projects/$project/requirements/$rq?username=sebastien.fabre&api-key={35769756-F0B8-47B7-85F8-8A80380E88AC}"));
+						$releaseId = $releaseData['RELEASE_ID'];
+						$projectId = $releaseData['PROJECT_ID'];
+						$statusName = $releaseData['REQUIREMENT_STATUS_NAME'];
+						$release = $releaseData['RELEASE_VERSION_NUMBER'];
 
-						if (empty($data) || empty($data->StatusName))
-						{
-							continue;
-						}
+						
+						$releaseHtml .= '<a href="https://thefactory.crossknowledge.com/' . $projectId . '/Release/' . intval($releaseId) . '.aspx">' . $release . '</a><br/>';
 
-						$release = $data->ReleaseVersionNumber;
-						$releaseId = $data->ReleaseId;
+						$foundIncidents[intval($rq)] = $statusName;
 
-						if (!empty($releaseId))
-						{
-							//$releaseData = @json_decode(file_get_contents("http://thefactory.crossknowledge.com/Services/v4_0/RestService.svc/projects/$project/releases/$releaseId?username=sebastien.fabre&api-key={35769756-F0B8-47B7-85F8-8A80380E88AC}"));
+                                                if ($statusName !== 'DONE' && $statusName !== 'REJECTED')
+                                                        $allClosed = false;
 
-							$releaseHtml .= '<a href="https://thefactory.crossknowledge.com/' . $project . '/Release/' . intval($releaseId) . '.aspx">' . $release . '</a><br/>';
-						}
+                                                if ($statusName == 'DONE' || $statusName == 'REJECTED')
+                                                        $minStatus = min($minStatus, 5);
+                                                else if ($statusName == 'VAL')
+                                                        $minStatus = min($minStatus, 4);
+                                                else if ($statusName == 'DEV')
+                                                        $minStatus = min($minStatus, 3);
+                                                else
+                                                        $minStatus = min($minStatus, 1);
+						
+						$spiraHtml .= '<a href="https://thefactory.crossknowledge.com/' . $projectId . '/Requirement/' . intval($rq) . '.aspx">' . $incident . '</a>: ' .  $statusName . '<br/>';
 
-						$foundIncidents[$data->RequirementId] = $data->StatusName;
-
-						if ($data->StatusName !== 'Completed')
-							$allClosed = false;
-
-						if ($data->StatusName == 'DONE' || $data->StatusName == 'REJECTED')
-							$minStatus = min($minStatus, 5);
-						else if ($data->StatusName == 'VAL')
-							$minStatus = min($minStatus, 4);
-						else if ($data->StatusName == 'DEV')
-							$minStatus = min($minStatus, 3);
-						else
-							$minStatus = min($minStatus, 1);
-
-						$spiraHtml .= '<a href="https://thefactory.crossknowledge.com/' . $project . '/Requirement/' . intval($rq) . '.aspx">' . 'RQ:' . intval($rq) . '</a>: ' .  $data->StatusName . '<br/>';
-						break;
-					}
-				}
-				else if (preg_match('/\[IN:(\d+)\]/', $incident, $matches))
-				{
-					$incident = $matches[1];
-
-					foreach ($projectIds as $project)
-					{
-						$data = @json_decode(file_get_contents("http://thefactory.crossknowledge.com/Services/v4_0/RestService.svc/projects/$project/incidents/$incident?username=sebastien.fabre&api-key={35769756-F0B8-47B7-85F8-8A80380E88AC}"));
-
-						if (empty($data) || empty($data->IncidentStatusName))
-						{
-							continue;
-						}
-
-						$release = $data->VerifiedReleaseVersionNumber;
-						$releaseId = $data->VerifiedReleaseId;
-
-						if (!empty($releaseId))
-						{
-							//$releaseData = @json_decode(file_get_contents("http://thefactory.crossknowledge.com/Services/v4_0/RestService.svc/projects/$project/releases/$releaseId?username=sebastien.fabre&api-key={35769756-F0B8-47B7-85F8-8A80380E88AC}"));
-
-							$releaseHtml .= '<a href="https://thefactory.crossknowledge.com/' . $project . '/Release/' . intval($releaseId) . '.aspx">' . $release . '</a><br/>';
-						}
-
-						$foundIncidents[$data->IncidentId] = $data->IncidentStatusOpenStatus;
-
-						if ($data->IncidentStatusOpenStatus)
-							$allClosed = false;
-
-						$minStatus = min($minStatus, substr($data->IncidentStatusName, 0, 1));
-
-						$spiraHtml .= '<a href="https://thefactory.crossknowledge.com/' . $project . '/Incident/' . intval($incident) . '.aspx">' . intval($incident) . '</a>: ' .  $data->IncidentStatusName . '<br/>';
-						break;
 					}
 				}
 				else
 				{
-					if (preg_match('@.*thefactory.crossknowledge.com/(\d+)/Incident/(\d+).*@', $incident, $m))
+					if (preg_match('/\[IN:(\d+)\]/', $incident, $matches))
 					{
-						$projects = array($m[1]);
+						$incident = $matches[1];
+					}
+					else if (preg_match('@.*thefactory.crossknowledge.com/(\d+)/Incident/(\d+).*@', $incident, $m))
+					{
 						$incident = $m[2];
+					}
+
+					if (is_numeric($incident))
+					{
+						$data = getSpiraIncident($incident);
+					
+						if (!empty($data))
+						{
+							$release = $data['VERIFIED_RELEASE_VERSION_NUMBER'];
+							$releaseId = $data['VERIFIED_RELEASE_ID'];
+							$projectId = $data['PROJECT_ID'];
+							$statusName = $data['INCIDENT_STATUS_NAME'];
+		
+							$foundIncidents[intval($incident)] = $data['INCIDENT_STATUS_IS_OPEN_STATUS'];
+							
+							$releaseHtml .= '<a href="https://thefactory.crossknowledge.com/' . $projectId . '/Release/' . intval($releaseId) . '.aspx">' . $release . '</a><br/>';
+							
+							if ($data['INCIDENT_STATUS_IS_OPEN_STATUS'])
+                                                        	$allClosed = false;
+	
+        	                                        $minStatus = min($minStatus, substr($data['INCIDENT_STATUS_IS_OPEN_STATUS'], 0, 1));
+	
+        	                                        $spiraHtml .= '<a href="https://thefactory.crossknowledge.com/' . $projectId . '/Incident/' . intval($incident) . '.aspx">' . intval($incident) . '</a>: ' .  $statusName . '<br/>';	
+						}
 					}
 					else
 					{
-						$projects = $projectIds;
-					}
-
-					foreach ($projects as $project)
-					{
-						$data = @json_decode(file_get_contents("http://thefactory.crossknowledge.com/Services/v4_0/RestService.svc/projects/$project/incidents/$incident?username=sebastien.fabre&api-key={35769756-F0B8-47B7-85F8-8A80380E88AC}"));
-
-						if (empty($data) || empty($data->IncidentStatusName))
-						{
-							continue;
-						}
-
-						$release = $data->VerifiedReleaseVersionNumber;
-						$releaseId = $data->VerifiedReleaseId;
-
-						if (!empty($releaseId))
-						{
-							//$releaseData = @json_decode(file_get_contents("http://thefactory.crossknowledge.com/Services/v4_0/RestService.svc/projects/$project/releases/$releaseId?username=sebastien.fabre&api-key={35769756-F0B8-47B7-85F8-8A80380E88AC}"));
-
-							$releaseHtml .= '<a href="https://thefactory.crossknowledge.com/' . $project . '/Release/' . intval($releaseId) . '.aspx">' . $release . '</a><br/>';
-						}
-
-						$foundIncidents[$data->IncidentId] = $data->IncidentStatusOpenStatus;
-
-						if ($data->IncidentStatusOpenStatus)
-							$allClosed = false;
-
-						$minStatus = min($minStatus, substr($data->IncidentStatusName, 0, 1));
-
-						$spiraHtml .= '<a href="https://thefactory.crossknowledge.com/' . $project . '/Incident/' . intval($incident) . '.aspx">' . intval($incident) . '</a>: ' .  $data->IncidentStatusName . '<br/>';
-						break;
+						$spiraHtml .= $incident;
 					}
 				}
 			}
