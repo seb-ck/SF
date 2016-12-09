@@ -1,3 +1,9 @@
 <?php
 $USERNAME = '';
 $PASSWORD = '';
+
+$SPIRA_HOST = '';
+$SPIRA_USERNAME = '';
+$SPIRA_PASSWORD = '';
+$SPIRA_DATABASE = '';
+
