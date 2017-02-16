@@ -233,7 +233,8 @@ die;
                                                 {
                                                 	$releaseData = getSpiraRelease($releaseId);
                                                         $releaseDate = DateTime::createFromFormat('Y-m-d\TH:i:s.000', $releaseData['CUST_01'], new DateTimeZone('UTC'));
-                                                        $releaseDates []= $releaseDate->setTimezone(new DateTimeZone('Europe/Paris'))->format('Y-m-d');
+							if (!empty($releaseDate))
+                                                        	$releaseDates []= $releaseDate->setTimezone(new DateTimeZone('Europe/Paris'))->format('Y-m-d');
                                                 }
 
 						
@@ -284,7 +285,8 @@ die;
 							{
 								$releaseData = getSpiraRelease($releaseId);
 								$releaseDate = DateTime::createFromFormat('Y-m-d\TH:i:s.000', $releaseData['CUST_01'], new DateTimeZone('UTC'));
-								$releaseDates []= $releaseDate->setTimezone(new DateTimeZone('Europe/Paris'))->format('Y-m-d');
+								if (!empty($releaseDate))
+									$releaseDates []= $releaseDate->setTimezone(new DateTimeZone('Europe/Paris'))->format('Y-m-d');
 							}
 		
 							$foundIncidents[intval($incident)] = $data['INCIDENT_STATUS_IS_OPEN_STATUS'];
@@ -371,7 +373,7 @@ die;
 	echo '<p style="font-size: 30px; font-weight: bold; text-align: center;">' . $cpt . ' cases with pending incidents, or incident with pending case.</p>';
 	echo '<table style="width: 100%"><tr>';
 	echo '<td style="font-size: 30px; line-height: 30px;" valign="middle"><img src="refresh.png" width=32 height=32 valign="bottom" /> ' . $warnings . ' cases</td>';
-	echo '<td style="font-size: 30px; line-height: 30px;" valign="middle"><img src="soon.png" valig="bottom" /> ' . $soon . ' cases</td>';
+	echo '<td style="font-size: 30px; line-height: 30px;" valign="middle"><img src="soon.png" valign="bottom" /> ' . $soon . ' cases</td>';
 	echo '<td style="font-size: 30px; line-height: 30px;" valign="middle"><img src="trash.png" valign="bottom" /> ' . $toClose . ' cases</td>';
 	echo '</tr></table>';
 	echo '<br/><br/><br/>';
