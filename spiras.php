@@ -328,7 +328,7 @@ die;
 			}
 			else if ($allClosed)
 			{
-				if (max($releaseDates) < date("Y-m-d"))
+				if (!empty($releaseDates) && max($releaseDates) < date("Y-m-d"))
 				{
 					$tr .= '<td align=center><img src="trash.png" title="Support case needs to be closed" /></td>';
 					$toClose++;
