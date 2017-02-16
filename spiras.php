@@ -48,6 +48,24 @@ function getSpiraReq($reqId) {
 }
 
 
+function getSpiraRelease($relId) {
+        $query = 'select
+                                *
+                  from
+                                RPT_RELEASES
+                  where
+                                RELEASE_ID = "' . $relId . '"';
+
+        $query_result = mssql_query($query);
+        $aRow = mssql_fetch_array($query_result, MSSQL_ASSOC);
+        if ($aRow)
+                return $aRow;
+        else
+                return null;
+}
+
+
+
 /*
 	Case fields:
 	ID	ISDELETED	CASENUMBER	CONTACTID	ACCOUNTID	COMMUNITYID	PARENTID	SUPPLIEDNAME	SUPPLIEDEMAIL	SUPPLIEDPHONE	SUPPLIEDCOMPANY	TYPE	RECORDTYPEID	STATUS	REASON	ORIGIN	SUBJECT	PRIORITY	DESCRIPTION	ISCLOSED	CLOSEDDATE	ISESCALATED	OWNERID	CREATEDDATE	CREATEDBYID	LASTMODIFIEDDATE	LASTMODIFIEDBYID	SYSTEMMODSTAMP	LASTVIEWEDDATE	LASTREFERENCEDDATE	CREATORFULLPHOTOURL	CREATORSMALLPHOTOURL	CREATORNAME
@@ -149,6 +167,7 @@ die;
 	$cpt = 0;
 	$toClose = 0;
 	$warnings = 0;
+	$soon = 0;
 
 	foreach ($ownerIds as $ownerId => $owner)
 	{
@@ -193,6 +212,7 @@ die;
 			$allClosed = true;
 			$foundIncidents = array();
 			$minStatus = 5;
+			$releaseDates = array();
 
 			foreach ($spira as $incident)
 			{
@@ -208,6 +228,13 @@ die;
 						$projectId = $releaseData['PROJECT_ID'];
 						$statusName = $releaseData['REQUIREMENT_STATUS_NAME'];
 						$release = $releaseData['RELEASE_VERSION_NUMBER'];
+							
+						if (!empty($releaseId))
+                                                {
+                                                	$releaseData = getSpiraRelease($releaseId);
+                                                        $releaseDate = DateTime::createFromFormat('Y-m-d\TH:i:s.000', $releaseData['CUST_01'], new DateTimeZone('UTC'));
+                                                        $releaseDates []= $releaseDate->setTimezone(new DateTimeZone('Europe/Paris'))->format('Y-m-d');
+                                                }
 
 						
 						$releaseHtml .= '<a href="https://thefactory.crossknowledge.com/' . $projectId . '/Release/' . intval($releaseId) . '.aspx">' . $release . '</a><br/>';
@@ -251,6 +278,14 @@ die;
 							$releaseId = $data['VERIFIED_RELEASE_ID'];
 							$projectId = $data['PROJECT_ID'];
 							$statusName = $data['INCIDENT_STATUS_NAME'];
+							$releaseDate = false;
+
+							if (!empty($releaseId))
+							{
+								$releaseData = getSpiraRelease($releaseId);
+								$releaseDate = DateTime::createFromFormat('Y-m-d\TH:i:s.000', $releaseData['CUST_01'], new DateTimeZone('UTC'));
+								$releaseDates []= $releaseDate->setTimezone(new DateTimeZone('Europe/Paris'))->format('Y-m-d');
+							}
 		
 							$foundIncidents[intval($incident)] = $data['INCIDENT_STATUS_IS_OPEN_STATUS'];
 							
@@ -291,8 +326,16 @@ die;
 			}
 			else if ($allClosed)
 			{
-				$tr .= '<td align=center><img src="warning.png" title="Support case might need to be closed" /></td>';
-				$toClose++;
+				if (max($releaseDates) < date("Y-m-d"))
+				{
+					$tr .= '<td align=center><img src="trash.png" title="Support case needs to be closed" /></td>';
+					$toClose++;
+				}
+				else
+				{
+					$tr .= '<td align=center><img src="soon.png" title="Support case will be delivered soon" /></td>';
+					$soon++;
+				}
 			}
 			else
 			{
@@ -300,7 +343,7 @@ die;
 					|| ($minStatus >= 3 && $minStatus < 5 && $c->fields->Status != 'Waiting bug validation')
 					|| ($minStatus == 5 && $c->fields->Status != 'Waiting bug delivery'))
 				{
-					$tr .= '<td align=center><img src="gnome-status.png" title="Status of case or incident might need to be updated" /></td>';
+					$tr .= '<td align=center><img src="refresh.png" title="Status of case or incident might need to be updated" width=32 height=32/></td>';
 					$warnings++;
 				}
 				else
@@ -326,8 +369,11 @@ die;
 	}
 
 	echo '<p style="font-size: 30px; font-weight: bold; text-align: center;">' . $cpt . ' cases with pending incidents, or incident with pending case.</p>';
-	echo '<p style="font-size: 30px; font-weight: bold; text-align: center;">' . $warnings . ' cases might need to be updated.</p>';
-	echo '<p style="font-size: 30px; font-weight: bold; text-align: center;">' . $toClose . ' cases might need to be closed.</p>';
+	echo '<table style="width: 100%"><tr>';
+	echo '<td style="font-size: 30px; line-height: 30px;" valign="middle"><img src="refresh.png" width=32 height=32 valign="bottom" /> ' . $warnings . ' cases</td>';
+	echo '<td style="font-size: 30px; line-height: 30px;" valign="middle"><img src="soon.png" valig="bottom" /> ' . $soon . ' cases</td>';
+	echo '<td style="font-size: 30px; line-height: 30px;" valign="middle"><img src="trash.png" valign="bottom" /> ' . $toClose . ' cases</td>';
+	echo '</tr></table>';
 	echo '<br/><br/><br/>';
 }
 catch (Exception $e)
