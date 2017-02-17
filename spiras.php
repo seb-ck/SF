@@ -341,8 +341,7 @@ die;
 			}
 			else
 			{
-				if (($minStatus < 3 && $c->fields->Status != 'Waiting bug resolution')
-					|| ($minStatus >= 3 && $minStatus < 5 && $c->fields->Status != 'Waiting bug validation')
+				if (($minStatus < 5 && $c->fields->Status != 'Waiting bug resolution')
 					|| ($minStatus == 5 && $c->fields->Status != 'Waiting bug delivery'))
 				{
 					$tr .= '<td align=center><img src="refresh.png" title="Status of case or incident might need to be updated" width=32 height=32/></td>';
