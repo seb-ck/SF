@@ -218,12 +218,12 @@ try
 				{
 					if ($diff < 60)
 					{
-						$tr .= '<td align="center"><img src="./feedback.png" title="Keyze has been waiting for consultant for at least two weeks" /></td>';
+						$tr .= '<td align="center"><img src="./images/feedback.png" title="Keyze has been waiting for consultant for at least two weeks" /></td>';
 						$totals['feedback']++;
 					}
 					else
 					{
-						$tr .= '<td align="center"><img src="./trash.png" title="Keyze has been waiting for consultant for at least TWO MONTHS" /></td>';
+						$tr .= '<td align="center"><img src="./images/trash.png" title="Keyze has been waiting for consultant for at least TWO MONTHS" /></td>';
 						$totals['trash']++;
 					}
 				}
@@ -231,17 +231,17 @@ try
 				{
 					if ($diff > 30)
 					{
-						$tr .= '<td align="center"><img src="./31.png" title="Last staff reply was over a month ago" /></td>';
+						$tr .= '<td align="center"><img src="./images/31.png" title="Last staff reply was over a month ago" /></td>';
 						$totals[31]++;
 					}
 					else if ($diff > 14)
 					{
-						$tr .= '<td align="center"><img src="./14.png" title="Last staff reply was at least two weeks ago" /></td>';
+						$tr .= '<td align="center"><img src="./images/14.png" title="Last staff reply was at least two weeks ago" /></td>';
 						$totals[14]++;
 					}
 					else
 					{
-						$tr .= '<td align="center"><img src="./7.png" title="Last staff reply was at least a week ago" /></td>';
+						$tr .= '<td align="center"><img src="./images/7.png" title="Last staff reply was at least a week ago" /></td>';
 						$totals[7]++;
 					}
 				}
@@ -275,12 +275,12 @@ try
 
 				if ($diff < 5)
 				{
-					$tr .= '<td align="center"><img src="./2.png" title="Keyze created at least two working days ago but no staff reply yet" /></td>';
+					$tr .= '<td align="center"><img src="./images/2.png" title="Keyze created at least two working days ago but no staff reply yet" /></td>';
 					$totals[2]++;
 				}
 				else
 				{
-					$tr .= '<td align="center"><img src="./alert.png" title="Keyze created at least ONE WEEK ago but no staff reply yet" /></td>';
+					$tr .= '<td align="center"><img src="./images/alert.png" title="Keyze created at least ONE WEEK ago but no staff reply yet" /></td>';
 					$totals['alert']++;
 				}
 			}

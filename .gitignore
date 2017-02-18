@@ -1,3 +1,5 @@
 /conf.php
 data*.csv
 .idea
+pdf/*
+temp/*

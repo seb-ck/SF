@@ -165,7 +165,7 @@ foreach ($casesCount as $bu => $timeData)
 
 	$ddata = '[' . rtrim($ddata, ",") . ']';
 	
-	$f = fopen("data$chart.csv", "w");
+	$f = fopen("temp/data$chart.csv", "w");
 	
 	fputcsv($f, array('Date', 'Customers', 'Internal'));
 	foreach ($timeData as $date => $stuff)
@@ -195,7 +195,7 @@ z<?= $chart ?> = d3.scaleOrdinal()
 
 stack<?= $chart ?> = d3.stack();
 
-d3.csv("data<?= $chart ?>.csv", type, function(error, data<?= $chart ?>) {
+d3.csv("temp/data<?= $chart ?>.csv", type, function(error, data<?= $chart ?>) {
   if (error) throw error;
 
   //data.sort(function(a, b) { return b.total - a.total; });

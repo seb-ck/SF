@@ -323,19 +323,19 @@ die;
 
 			if (empty($spira) || count($spira) != count($foundIncidents))
 			{
-				$tr .= '<td align=center><img src="404.png" title="At least one of the incidents could not be found" /></td>';
+				$tr .= '<td align=center><img src="images/404.png" title="At least one of the incidents could not be found" /></td>';
 				$warnings++;
 			}
 			else if ($allClosed)
 			{
 				if (!empty($releaseDates) && max($releaseDates) < date("Y-m-d"))
 				{
-					$tr .= '<td align=center><img src="trash.png" title="Support case needs to be closed" /></td>';
+					$tr .= '<td align=center><img src="images/trash.png" title="Support case needs to be closed" /></td>';
 					$toClose++;
 				}
 				else
 				{
-					$tr .= '<td align=center><img src="soon.png" title="Support case will be delivered soon" /></td>';
+					$tr .= '<td align=center><img src="images/soon.png" title="Support case will be delivered soon" /></td>';
 					$soon++;
 				}
 			}
@@ -344,7 +344,7 @@ die;
 				if (($minStatus < 5 && $c->fields->Status != 'Waiting bug resolution')
 					|| ($minStatus == 5 && $c->fields->Status != 'Waiting bug delivery'))
 				{
-					$tr .= '<td align=center><img src="refresh.png" title="Status of case or incident might need to be updated" width=32 height=32/></td>';
+					$tr .= '<td align=center><img src="images/refresh.png" title="Status of case or incident might need to be updated" width=32 height=32/></td>';
 					$warnings++;
 				}
 				else
@@ -371,9 +371,9 @@ die;
 
 	echo '<p style="font-size: 30px; font-weight: bold; text-align: center;">' . $cpt . ' cases with pending incidents, or incident with pending case.</p>';
 	echo '<table style="width: 100%"><tr>';
-	echo '<td style="font-size: 30px; line-height: 30px;" valign="middle"><img src="refresh.png" width=32 height=32 valign="bottom" /> ' . $warnings . ' cases</td>';
-	echo '<td style="font-size: 30px; line-height: 30px;" valign="middle"><img src="soon.png" valign="bottom" /> ' . $soon . ' cases</td>';
-	echo '<td style="font-size: 30px; line-height: 30px;" valign="middle"><img src="trash.png" valign="bottom" /> ' . $toClose . ' cases</td>';
+	echo '<td style="font-size: 30px; line-height: 30px;" valign="middle"><img src="images/refresh.png" width=32 height=32 valign="bottom" /> ' . $warnings . ' cases</td>';
+	echo '<td style="font-size: 30px; line-height: 30px;" valign="middle"><img src="images/soon.png" valign="bottom" /> ' . $soon . ' cases</td>';
+	echo '<td style="font-size: 30px; line-height: 30px;" valign="middle"><img src="images/trash.png" valign="bottom" /> ' . $toClose . ' cases</td>';
 	echo '</tr></table>';
 	echo '<br/><br/><br/>';
 }
