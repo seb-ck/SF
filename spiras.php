@@ -280,6 +280,9 @@ die;
 							$projectId = $data['PROJECT_ID'];
 							$statusName = $data['INCIDENT_STATUS_NAME'];
 							$releaseDate = false;
+							
+							if (empty($releaseId))
+								$releaseId = $data['RESOLVED_RELEASE_ID'];
 
 							if (!empty($releaseId))
 							{
