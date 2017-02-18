@@ -310,7 +310,7 @@ try
 	echo '<tr>';
 	foreach ($totals as $i => $count)
 	{
-		echo "<td style='font-size: 30px; line-height: 30px;' valign=middle><img src='./$i.png' valign=bottom /> $count cases</td>";
+		echo "<td style='font-size: 30px; line-height: 30px;' valign=middle><img src='./images/$i.png' valign=bottom /> $count cases</td>";
 	}
 	echo '</tr>';
 	echo '</table>';
