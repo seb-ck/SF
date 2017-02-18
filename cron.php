@@ -3,6 +3,8 @@
 
 set_time_limit(0);
 
+@mkdir('pdf');
+
 // Set the list of tasks
 $tasks = array(
 	'cases_and_emails' => 'every monday',

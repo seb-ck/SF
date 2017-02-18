@@ -19,6 +19,8 @@
 
 set_time_limit(0);
 
+@mkdir('temp');
+
 require_once('conf.php');
 
 define("SOAP_CLIENT_BASEDIR", "Force.com-Toolkit-for-PHP-master/soapclient");
