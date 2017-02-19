@@ -1,5 +1,5 @@
 <?php
-// */5 * * * * curl --request GET 'http://exemple.com/path/check.php?param1=1&param2=2' > /dev/null
+// 0 9 * * * curl --request GET 'http://support-salesforce.qalmstest.crossknowledge.com/cron.php' > /dev/null
 
 set_time_limit(0);
 
@@ -14,17 +14,25 @@ $tasks = array(
 //	'surveys' => 'every day',
 );
 
+$attachments = array();
+
 // Define the functions
 function cases_and_emails()
 {
+	global $attachments;
+
 	$url = 'http://support-salesforce.qalmstest.crossknowledge.com/cases_and_emails.php';
 	$pdf = file_get_contents('http://html2pdf.lms.crossknowledge.com?c=' . md5('9B1442F5-0F23-15A4-D957-A37F4B1ABF5E' . $url) . '&url=' . urlencode($url));
 
 	@copy($pdf, 'pdf/cases_and_emails_' . date('Y-m-d') . '.pdf');
+	
+	$attachments []= getcwd() . 'pdf/cases_and_emails_' . date('Y-m-d') . '.pdf',
 }
 
 function spiras()
 {
+	global $attachments;
+	
 	$ctx = stream_context_create(array('http'=>
     array(
 			'timeout' => 600,
@@ -35,11 +43,19 @@ function spiras()
 	$pdf = file_get_contents('http://html2pdf.lms.crossknowledge.com?c=' . md5('9B1442F5-0F23-15A4-D957-A37F4B1ABF5E' . $url) . '&url=' . urlencode($url), false, $ctx);
 
 	@copy($pdf, 'pdf/spiras_' . date('Y-m-d') . '.pdf');
+	
+	$attachments []= getcwd() . 'pdf/spiras_' . date('Y-m-d') . '.pdf',
 }
 
 function spam()
 {
-	file_get_contents('http://support-salesforce.qalmstest.crossknowledge.com/spam.php?purge=1');
+	$ctx = stream_context_create(array('http'=>
+    array(
+			'timeout' => 600,
+		)
+	));
+
+	file_get_contents('http://support-salesforce.qalmstest.crossknowledge.com/spam.php?purge=1', false, $ctx);
 }
 
 // Default: just list the tasks, don't actually do anything
@@ -102,3 +118,24 @@ switch (date('w'))
 
 // Finally, run the everyday tasks
 spam();
+
+// Send attachments by email
+include_once('htmlMimeMail/htmlMimeMail.php');
+if (!empty($attachments) && !empty($EMAIL_RECIPIENTS))
+{
+	$mail = new htmlMimeMail();
+	$mail->setHeadCharset('UTF-8');
+	$mail->setHtmlCharset('UTF-8');
+	$mail->setTextCharset('UTF-8');
+	
+	$mail->smtp_params['host'] = $SMTP_HOST;
+	$mail->setFrom('no-reply@crossknowledge.com');
+	$mail->setSubject('Support team reportings');
+	
+	$mail->setText($TextMessage);
+	
+	foreach ($attachments as $att)
+		$mail->addAttachment($mail->getFile($att), basename($att));
+	
+	$mail->send($EMAIL_RECIPIENTS, 'smtp')
+}
