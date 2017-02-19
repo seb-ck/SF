@@ -1,6 +1,7 @@
 <?php
 // 0 9 * * * curl --request GET 'http://support-salesforce.qalmstest.crossknowledge.com/cron.php' > /dev/null
 
+require_once('conf.php');
 set_time_limit(0);
 
 @mkdir('pdf');
@@ -26,7 +27,7 @@ function cases_and_emails()
 
 	@copy($pdf, 'pdf/cases_and_emails_' . date('Y-m-d') . '.pdf');
 	
-	$attachments []= getcwd() . 'pdf/cases_and_emails_' . date('Y-m-d') . '.pdf',
+	$attachments []= getcwd() . '/pdf/cases_and_emails_' . date('Y-m-d') . '.pdf';
 }
 
 function spiras()
@@ -44,7 +45,7 @@ function spiras()
 
 	@copy($pdf, 'pdf/spiras_' . date('Y-m-d') . '.pdf');
 	
-	$attachments []= getcwd() . 'pdf/spiras_' . date('Y-m-d') . '.pdf',
+	$attachments []= getcwd() . '/pdf/spiras_' . date('Y-m-d') . '.pdf';
 }
 
 function spam()
@@ -116,8 +117,8 @@ switch (date('w'))
 		break;
 }
 
-// Finally, run the everyday tasks
-spam();
+// Finally, run the everyday tasks (except spam, do it at the very end)
+
 
 // Send attachments by email
 include_once('htmlMimeMail/htmlMimeMail.php');
@@ -132,10 +133,15 @@ if (!empty($attachments) && !empty($EMAIL_RECIPIENTS))
 	$mail->setFrom('no-reply@crossknowledge.com');
 	$mail->setSubject('Support team reportings');
 	
-	$mail->setText($TextMessage);
+	$mail->setText('Support team reportings for ' . date('Y-m-d'));
 	
 	foreach ($attachments as $att)
 		$mail->addAttachment($mail->getFile($att), basename($att));
 	
-	$mail->send($EMAIL_RECIPIENTS, 'smtp')
+	$mail->send($EMAIL_RECIPIENTS, 'smtp');
 }
+
+
+// Conclude in beauty
+spam();
+
