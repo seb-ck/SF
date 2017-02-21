@@ -1,5 +1,5 @@
 <?php
-// 0 9 * * * curl --request GET 'http://support-salesforce.qalmstest.crossknowledge.com/cron.php' > /dev/null
+// 0 9 * * * curl --request GET '%%%$SITE_URL%%%cron.php' > /dev/null
 
 require_once('conf.php');
 set_time_limit(0);
@@ -20,9 +20,9 @@ $attachments = array();
 // Define the functions
 function cases_and_emails()
 {
-	global $attachments;
+	global $attachments, $SITE_URL;
 
-	$url = 'http://support-salesforce.qalmstest.crossknowledge.com/cases_and_emails.php';
+	$url = $SITE_URL . 'cases_and_emails.php';
 	$pdf = file_get_contents('http://html2pdf.lms.crossknowledge.com?c=' . md5('9B1442F5-0F23-15A4-D957-A37F4B1ABF5E' . $url) . '&url=' . urlencode($url));
 
 	@copy($pdf, 'pdf/cases_and_emails_' . date('Y-m-d') . '.pdf');
@@ -32,7 +32,7 @@ function cases_and_emails()
 
 function spiras()
 {
-	global $attachments;
+	global $attachments, $SITE_URL;
 	
 	$ctx = stream_context_create(array('http'=>
     array(
@@ -40,7 +40,7 @@ function spiras()
 		)
 	));
 
-	$url = 'http://support-salesforce.qalmstest.crossknowledge.com/spiras.php';
+	$url = $SITE_URL . 'spiras.php';
 	$pdf = file_get_contents('http://html2pdf.lms.crossknowledge.com?c=' . md5('9B1442F5-0F23-15A4-D957-A37F4B1ABF5E' . $url) . '&url=' . urlencode($url), false, $ctx);
 
 	@copy($pdf, 'pdf/spiras_' . date('Y-m-d') . '.pdf');
@@ -50,13 +50,15 @@ function spiras()
 
 function spam()
 {
+	global $SITE_URL;
+	
 	$ctx = stream_context_create(array('http'=>
     array(
 			'timeout' => 600,
 		)
 	));
 
-	file_get_contents('http://support-salesforce.qalmstest.crossknowledge.com/spam.php?purge=1', false, $ctx);
+	file_get_contents($SITE_URL . 'spam.php?purge=1', false, $ctx);
 }
 
 // Default: just list the tasks, don't actually do anything

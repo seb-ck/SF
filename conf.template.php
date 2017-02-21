@@ -9,3 +9,5 @@ $SPIRA_DATABASE = '';
 
 $EMAIL_RECIPIENTS = array();
 $SMTP_HOST = '';
+
+$SITE_URL = '';
