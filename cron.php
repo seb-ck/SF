@@ -133,9 +133,11 @@ if (!empty($attachments) && !empty($EMAIL_RECIPIENTS))
 	
 	$mail->smtp_params['host'] = $SMTP_HOST;
 	$mail->setFrom('no-reply@crossknowledge.com');
-	$mail->setSubject('Support team reportings');
+	$mail->setSubject('Support team reportings for ' . date('Y-m-d'));
 	
-	$mail->setText('Support team reportings for ' . date('Y-m-d'));
+	$mail->setHtml('Hello,<br/><br/>' . 
+		'Please find attached today\'s exports,<br/><br/>' . 
+		'You can get all <a href="' . $SITE_URL . 'pdf/">the previous pdf here</a>');
 	
 	foreach ($attachments as $att)
 		$mail->addAttachment($mail->getFile($att), basename($att));
