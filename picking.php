@@ -1,9 +1,10 @@
 <?php
 require_once('bootstrap.php');
-require_once('head.php');
 
 if (!empty($_GET['mail']))
 	ob_start();
+
+require_once('head.php');
 ?>
 
 <h1>Picking</h1>

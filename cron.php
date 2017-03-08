@@ -65,7 +65,7 @@ function picking()
 {
 	global $SITE_URL;
 
-	file_get_contents($SITE_URL . 'picking.php');
+	file_get_contents($SITE_URL . 'picking.php?mail=1');
 }
 
 // Default: just list the tasks, don't actually do anything
