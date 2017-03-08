@@ -8,6 +8,7 @@ $SPIRA_PASSWORD = '';
 $SPIRA_DATABASE = '';
 
 $EMAIL_RECIPIENTS = array();
+$PICKING_RECIPIENTS = array();
 $SMTP_HOST = '';
 
 $SITE_URL = '';

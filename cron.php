@@ -1,7 +1,7 @@
 <?php
 // 0 9 * * * curl --request GET '%%%$SITE_URL%%%cron.php' > /dev/null
 
-require_once('conf.php');
+require_once('bootstrap.php');
 set_time_limit(0);
 
 @mkdir('pdf');
@@ -11,7 +11,7 @@ $tasks = array(
 	'cases_and_emails' => 'every monday',
 	'spiras' => 'every monday',
 	'spam' => 'every day',
-//	'picking' => 'every friday',
+	'picking' => 'every friday',
 //	'surveys' => 'every day',
 );
 
@@ -61,6 +61,13 @@ function spam()
 	file_get_contents($SITE_URL . 'spam.php?purge=1', false, $ctx);
 }
 
+function picking()
+{
+	global $SITE_URL;
+
+	file_get_contents($SITE_URL . 'picking.php');
+}
+
 // Default: just list the tasks, don't actually do anything
 if (!isset($_GET['run']))
 {
@@ -88,7 +95,7 @@ if (isset($_GET['force']))
 	die;
 }
 
-// Process the daily tasks
+// Process the daily tasks (0 = sunday)
 switch (date('w'))
 {
 	case 0:
@@ -103,13 +110,13 @@ switch (date('w'))
 		break;
 	
 	case 3:
+		picking();
 		break;
 	
 	case 4:
 		break;
 	
 	case 5:
-		// picking();
 		break;
 	
 	case 6:
@@ -123,28 +130,15 @@ switch (date('w'))
 
 
 // Send attachments by email
-include_once('htmlMimeMail/htmlMimeMail.php');
 if (!empty($attachments) && !empty($EMAIL_RECIPIENTS))
 {
-	$mail = new htmlMimeMail();
-	$mail->setHeadCharset('UTF-8');
-	$mail->setHtmlCharset('UTF-8');
-	$mail->setTextCharset('UTF-8');
-	
-	$mail->smtp_params['host'] = $SMTP_HOST;
-	$mail->setFrom('no-reply@crossknowledge.com');
-	$mail->setSubject('Support team reportings for ' . date('Y-m-d'));
-	
-	$mail->setHtml('Hello,<br/><br/>' . 
-		'Please find attached today\'s exports,<br/><br/>' . 
-		'You can get all <a href="' . $SITE_URL . 'pdf/">the previous pdf here</a>');
-	
-	foreach ($attachments as $att)
-		$mail->addAttachment($mail->getFile($att), basename($att));
-	
-	$mail->send($EMAIL_RECIPIENTS, 'smtp');
-}
+	$subject = 'Support team reportings for ' . date('Y-m-d');
+	$body = 'Hello,<br/><br/>' .
+		'Please find attached today\'s exports,<br/><br/>' .
+		'You can get all <a href="' . $SITE_URL . 'pdf/">the previous pdf here</a>';
 
+	sendMail($subject, $body, $attachments, $EMAIL_RECIPIENTS);
+}
 
 // Conclude in beauty
 spam();
