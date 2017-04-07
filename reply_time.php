@@ -1,57 +1,65 @@
 <?php
-require_once('conf.php');
+require_once('bootstrap.php');
 require_once('head.php');
 ?>
 
-<h1>Average reply time</h1>
+<h1>Reply time from staff, assignment delays <small style="vertical-align: middle;">(last six months)</small></h1>
 
 <?php
 
-set_time_limit(0);
+function formatDate($d)
+{
+	if ($d->d == 1)
+		return $d->format('1 day %h hours');
+	
+	if ($d->d > 0)
+		return $d->format('%d days %h hours');
+	
+	if ($d->h == 1)
+		return $d->format('%h hour');
+	
+	if ($d->h == 0)
+		return '-';
+	
+	return $d->format('%h hours');
+}
 
-define("SOAP_CLIENT_BASEDIR", "Force.com-Toolkit-for-PHP-master/soapclient");
-require_once (SOAP_CLIENT_BASEDIR.'/SforcePartnerClient.php');
-require_once (SOAP_CLIENT_BASEDIR.'/SforceHeaderOptions.php');
-
-/*
-	Case fields:
-	ID	ISDELETED	CASENUMBER	CONTACTID	ACCOUNTID	COMMUNITYID	PARENTID	SUPPLIEDNAME	SUPPLIEDEMAIL	SUPPLIEDPHONE	SUPPLIEDCOMPANY	TYPE	RECORDTYPEID	STATUS	REASON	ORIGIN	SUBJECT	PRIORITY	DESCRIPTION	ISCLOSED	CLOSEDDATE	ISESCALATED	OWNERID	CREATEDDATE	CREATEDBYID	LASTMODIFIEDDATE	LASTMODIFIEDBYID	SYSTEMMODSTAMP	LASTVIEWEDDATE	LASTREFERENCEDDATE	CREATORFULLPHOTOURL	CREATORSMALLPHOTOURL	CREATORNAME	
-	THEME__C	PRODUCT_VERSION__C	ACCOUNT_NAME_TEMP__C	CASE_IMPORT_ID__C	SPIRA__C	MANTIS__C	CONTACT_EMAIL_IMPORT__C	GEOGRAPHICAL_ZONE__C	NO_TYPE_REFRESH__C	ACTIVITY__C	BACK_IN_QUEUE__C	TIMESPENT_MN__C	SURVEY_SENT__C	MOST_RECENT_REPLY_SENT__C	MOST_RECENT_INCOMING_EMAIL__C	NEW_EMAIL__C	REQUEST_TYPE__C	URL__C	LOGIN__C	PASSWORD__C	BROWSER__C	REPRODUCTION_STEP__C	ASSOCIATED_DEADLINE__C	RELATED_TICKET__C	CC__C	CATEGORIES__C	BILLABLE__C	LANGUAGE__C	KAYAKO_ID__C	COMMENTAIRE_SURVEY__C	IDSURVEY__C	TIME_SPENT_BILLABLE__C	SURVEY_SENT_DATE__C	CONTACT_EMAIL_FOR_INTERNAL_USE__C	OPENED_ON_BEHALF_CUSTOMER__C	BU__C
-
-	EmailMessage fields:
-	ID	PARENTID	ACTIVITYID	CREATEDBYID	CREATEDDATE	LASTMODIFIEDDATE	LASTMODIFIEDBYID	SYSTEMMODSTAMP	TEXTBODY	HTMLBODY	HEADERS	SUBJECT	FROMNAME	FROMADDRESS	TOADDRESS	CCADDRESS	BCCADDRESS	INCOMING	HASATTACHMENT	STATUS	MESSAGEDATE	ISDELETED	REPLYTOEMAILMESSAGEID	ISEXTERNALLYVISIBLE																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																								
-
-
-*/
+function getHours($d)
+{
+	return $d->d * 24 + $d->h;
+}
 
 try 
 {
-  $mySforceConnection = new SforcePartnerClient();
-  $mySoapClient = $mySforceConnection->createConnection(SOAP_CLIENT_BASEDIR.'/partner.wsdl.xml');
-  $mylogin = $mySforceConnection->login($USERNAME, $PASSWORD);
-	
 	$sixMonthsAgo = new DateTime();
 	$sixMonthsAgo->sub(new DateInterval('P6M'));
+//	$sixMonthsAgo->sub(new DateInterval('P6D'));
 	$sixMonthsAgo = $sixMonthsAgo->format('Y-m-d\TH:i:s.000\Z');
-	$query = "SELECT OwnerId, Owner.Alias FROM Case WHERE TYPE='Technical Support' AND IsClosed = True AND CreatedDate >= $sixMonthsAgo AND Status != 'Cancelled' AND OwnerId != '00G24000000sKGtEAM' GROUP BY OwnerId, Owner.Alias ORDER BY Owner.Alias ASC";
-	$response = $mySforceConnection->query($query);
-	$parentIds = array();
-	$casesIds = array();
-	$cases = array();
-	foreach ($response as $re)
-	{
-		$ownerId = $re->fields->OwnerId;
-		$owner = $re->fields->Alias;
-		
-		// DEBUG SEB
-		if ($ownerId !== '00524000000oP8KAAU')
-			continue;
+	$parentIds = [];
+	$casesIds = [];
+	$cases = [];
 	
-		$query = "SELECT Id, Subject, CaseNumber, LastModifiedDate, CreatedDate, OwnerId, AccountId, Status, IsEscalated FROM Case WHERE TYPE='Technical Support' AND IsClosed = True AND CreatedDate >= $sixMonthsAgo AND Status != 'Cancelled' AND OwnerId = '$ownerId' ORDER BY LASTMODIFIEDDATE DESC";
+	$avg = [];
+	$avgUsers = [];
+	$avgMonths = [];
+	$avgUsersMonths = [];
+	$avgEscalated = [];
+	$months = [];
+	
+	foreach ($supportUsers as $ownerId => $owner)
+	{
+		// DEBUG SEB
+//		if ($ownerId !== '00524000000oP8KAAU')
+	//		continue;
+	
+		$query = "SELECT Id, Subject, CaseNumber, CreatedDate, ClosedDate, OwnerId, Status, First_Response__c, IsEscalated
+							FROM Case 
+							WHERE TYPE='Technical Support' AND IsClosed = True AND ClosedDate >= $sixMonthsAgo AND Status != 'Cancelled' AND OwnerId = '$ownerId' AND (NOT Subject LIKE 'Potentially crashed%')
+							ORDER BY ClosedDate DESC";
 		$response = $mySforceConnection->query($query);
 		$now = new DateTime();
 		
-		$casesIds = array();
+		$casesIds = [];
 		foreach ($response as $record)
 		{
 			$casesIds []= $record->Id;
@@ -60,99 +68,90 @@ try
 		
 		$parentIds = implode("','", $casesIds);
 	
-		$query = "SELECT ParentId, Incoming, MIN(MESSAGEDATE) minDate, MAX(MESSAGEDATE) maxDate FROM EmailMessage WHERE ParentId IN ('$parentIds') GROUP BY ParentId, Incoming";
-		$query = "SELECT ParentId, MIN(MESSAGEDATE) minDate, MAX(MESSAGEDATE) maxDate FROM EmailMessage WHERE ParentId IN ('$parentIds') GROUP BY ParentId";
-		$response2 = $mySforceConnection->query($query);
-		$ids = array();
-		
-		foreach ($response2 as $record) 
-		{
-			if (empty($record->fields))
-				continue;
-				
-				var_dump($record);
-		
-			$cases[$record->fields->ParentId]->minOutgoingDate = $record->fields->minDate;
-			$cases[$record->fields->ParentId]->maxOutgoingDate = $record->fields->maxDate;
-		}
-	
-		echo '<table id="results">';
+		echo '<table class="results">';
 		echo '<thead>';
 		echo '<tr>';
-		echo '	<th colspan=11 align=left><span style="font-size: 1.5em">' . $owner . '</span></th>';
+		echo '	<th colspan=12 align=left><span style="font-size: 1.5em">' . $owner . '</span></th>';
 		echo '</tr>';
 		echo '<tr>';
+		echo '	<th>&nbsp;</th>';
 		echo '	<th>Case Number</th>';
 		echo '	<th>Subject</th>';
-		echo '	<th>Status</th>';
-		echo '	<th>Account</th>';
+		echo '	<th>&nbsp;</th>';
 		echo '	<th>Creation date</th>';
-		echo '	<th>Last modification date</th>';
-		echo '	<th>First outgoing email</th>';
-		echo '	<th>Last outgoing email</th>';
+		echo '	<th>Assignment date</th>';
+		echo '	<th>First staff reply</th>';
+		echo '	<th>&nbsp;</th>';
+		echo '	<th>Creation date &rArr; Assignment date</th>';
+		echo '	<th>Creation date &rArr; first reply</th>';
+		echo '	<th>Assignment date &rArr; first reply</th>';
+		echo '	<th>&nbsp;</th>';
 		echo '</tr>';
 		echo '</thead>';
 		
 		echo '<tbody>';
-		
+
+		$assSql = "SELECT CaseId, CreatedDate, Field, OldValue, NewValue FROM CaseHistory WHERE Field = 'Owner' AND CaseId IN ('$parentIds')";
+		$assResponse = $mySforceConnection->query($assSql);
+
+		$assignments = [];
+		foreach ($assResponse as $assr)
+		{
+		  if (strpos($assr->fields->OldValue, ' ') !== false 
+				&& $assr->fields->NewValue !== 'Technical Support'
+				&& $assr->fields->NewValue !== 'IT Exploitation')
+					$assignments[$assr->fields->CaseId] []= $assr;
+		}
+
 		$cpt = 0;
 		foreach ($cases as $c)
-		{/*
-			if ($cpt++%2)
-				$tr = '<tr class="odd">';
-			else
-				$tr = '<tr>';
+		{
+		  if (empty($assignments[$c->Id]) || empty($c->First_Response__c))
+		    continue;
+
+			$firstResponse = DateTime::createFromFormat('Y-m-d\TH:i:s.000\Z', $c->First_Response__c);
+			$creationDate = DateTime::createFromFormat('Y-m-d\TH:i:s.000\Z', $c->CreatedDate);
+			$closedDate = DateTime::createFromFormat('Y-m-d\TH:i:s.000\Z', $c->ClosedDate);
+			$assignmentDate = DateTime::createFromFormat('Y-m-d\TH:i:s.000\Z', $assignments[$c->Id][0]->fields->CreatedDate);
+
+			$diffAssignmentCreated = $creationDate->diff($assignmentDate);
+			$diffFirstCreated = $creationDate->diff($firstResponse);
+			$diffFirstAssignment = $assignmentDate->diff($firstResponse);
 			
-			$tr .= '<td>' . print_r($c, true) . '</td>';
+			if ($diffFirstAssignment->invert)
+				$diffFirstAssignment = new DateInterval('PT0S');
+				
+			$h = [getHours($diffAssignmentCreated), getHours($diffFirstCreated), getHours($diffFirstAssignment)];
+			for ($i=0; $i<3; $i++)
+			{
+				@$avg[$i] += $h[$i];
+				@$avgUsers[$owner][$i] += $h[$i];
+				@$avgUsersMonths[$owner][$closedDate->format('Y-m')][$i] += $h[$i];
+				@$avgMonths[$closedDate->format('Y-m')][$i] += $h[$i];
+			}
 			
-			$tr .= '</tr>';
-			
-			echo $tr;
-			continue;
-			*/
-			
-		
-			//$c = $cases[$id];
+			@$avg[3]++;
+			@$avgUsers[$owner][3]++;
+			@$avgUsersMonths[$owner][$closedDate->format('Y-m')][3]++;
+			@$avgMonths[$closedDate->format('Y-m')][3]++;
+			$months[$closedDate->format('Y-m')] = $closedDate->format('Y-m');
 			
 			$tr = '';
-
-			$escalated = '';
-			if ($c->fields->IsEscalated == 'true')
-				$escalated = '&nbsp;<img src="https://eu5.salesforce.com/img/func_icons/util/escalation12.gif" />';
-			
-			$tr .= '<td><a href="https://eu5.salesforce.com/' . $c->Id . '">' . $c->fields->CaseNumber . '</a>' . $escalated . '</td>';
-			$tr .= '<td>' . $c->fields->Subject . '</td>';
-			$tr .= '<td>' . $c->fields->Status . '</td>';
-			
-			if (!empty($accountIds[$c->fields->AccountId]))
-				$tr .= '<td>' . $accountIds[$c->fields->AccountId] . '</td>';
+			$tr .= '<th>&nbsp;</th>';
+			$tr .= '<td><a href="https://eu5.salesforce.com/' . $c->Id . '">' . $c->fields->CaseNumber . '</a></td>';
+			if (strlen($c->fields->Subject) > 50)
+			  $tr .= '<td title="' . $c->fields->Subject . '">' . substr($c->fields->Subject, 0, 50) . '...</td>';
 			else
-				$tr .= '<td></td>';
-			
+			  $tr .= '<td>' . $c->fields->Subject . '</td>';
+			$tr .= '<th>&nbsp;</th>';
 			$tr .= '<td>' . str_replace(array('T', '.000Z'), array(' ', ''), $c->fields->CreatedDate) . '</td>';
-			$tr .= '<td>' . str_replace(array('T', '.000Z'), array(' ', ''), $c->fields->LastModifiedDate) . '</td>';
-			$tr .= '<td>' . $c->countEmails . '</td>';
-			
-			if ($c->minOutgoingDate)
-			{
-				$minOutgoingDate = DateTime::createFromFormat('Y-m-d\TH:i:s.000\Z', $c->minOutgoingDate);
-				$tr .= '<td>' . $minOutgoingDate->format('Y-m-d H:i:s') . '</td>';
-			}
-			else
-			{
-				$tr .= '<td></td>';
-			}
-			
-			if ($c->maxOutgoingDate)
-			{
-				$maxOutgoingDate = DateTime::createFromFormat('Y-m-d\TH:i:s.000\Z', $c->maxOutgoingDate);
-				$tr .= '<td>' . $maxOutgoingDate->format('Y-m-d H:i:s') . '</td>';
-			}
-			else
-			{
-				$tr .= '<td></td>';
-			}
-			
+      $tr .= '<td><pre>' . $assignmentDate->format('Y-m-d H:i:s') . '</pre></td>';
+      $tr .= '<td>' . $firstResponse->format('Y-m-d H:i:s') . '</td>';
+      $tr .= '<th>&nbsp;</th>';
+      $tr .= '<td align=right>' . formatDate($diffAssignmentCreated) . '</td>';
+      $tr .= '<td align=right>' . formatDate($diffFirstCreated) . '</td>';
+      $tr .= '<td align=right>' . formatDate($diffFirstAssignment) . '</td>';
+			$tr .= '<th>&nbsp;</th>';
 			$tr .= '</tr>';
 			
 			if ($cpt++%2)
@@ -168,7 +167,62 @@ try
 		echo '<br/>';
 	}
 	
-	echo '<br/><br/><br/>';
+	echo '<br/><br/>';
+	
+	echo '<h1>Average first reply time after being assigned a case (hours)</h1>';
+	
+	ksort($months);
+	
+	echo '<table class="results">';
+	echo '<thead>';
+	echo '<tr>';
+	echo '	<th>Staff</th>';
+	foreach ($months as $month)
+	{
+		echo '<th>' . $month . '</th>';
+	}
+	echo '<th>Totals</th>';
+	echo '</tr>';
+	echo '</thead>';
+	
+	echo '<tbody>';
+	
+	foreach ($supportUsers as $userId => $owner)
+	{
+		echo '<tr>';
+		echo '<th>' . $owner . '</th>';
+		
+		foreach ($months as $month)
+		{
+			if (isset($avgUsersMonths[$owner][$month]))
+				echo '<td>' . floor($avgUsersMonths[$owner][$month][2] / $avgUsersMonths[$owner][$month][3]) . '</td>';
+			else
+				echo '<td> </td>';
+		}
+		
+		if (isset($avgUsers[$owner]))
+			echo '<th>' . floor($avgUsers[$owner][2] / $avgUsers[$owner][3]) . '</th>';
+		else
+			echo '<th> </th>';
+		
+		echo '</tr>';
+	}
+	
+	echo '<tr>';
+	echo '	<th>Totals</th>';
+	foreach ($months as $month)
+	{
+		if (isset($avgMonths[$month]))
+			echo '<th>' . floor($avgMonths[$month][2] / $avgMonths[$month][3]) . '</th>';
+		else
+			echo '<th> </th>';
+	}
+	
+	echo '<th>' . floor($avg[2] / $avg[3]) . '</th>';
+	echo '</tr>';
+	
+	echo '</tbody>';
+	echo '</table>';
 } 
 catch (Exception $e) 
 {
