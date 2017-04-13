@@ -35,8 +35,8 @@ try
 	echo '	<th>Status</th>';
 	echo '	<th>Account</th>';
 	echo '	<th>Creation date</th>';
-	echo '	<th>Latest staff reply &oror;</th>';
-	echo '	<th>Latest incoming email &or;</th>';
+	echo '	<th>Latest staff reply</th>';
+	echo '	<th>Latest incoming email</th>';
 	echo '</tr>';
 
 	foreach ($response as $c)
