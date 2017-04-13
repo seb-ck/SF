@@ -43,8 +43,12 @@ try
 	$avgUsers = [];
 	$avgMonths = [];
 	$avgUsersMonths = [];
-	$avgEscalated = [];
 	$months = [];
+
+	$avgBU = [];
+	$avgUsersBU = [];
+	$avgMonthsBU = [];
+	$avgUsersMonthsBU = [];
 	
 	foreach ($supportUsers as $ownerId => $owner)
 	{
@@ -52,7 +56,7 @@ try
 //		if ($ownerId !== '00524000000oP8KAAU')
 	//		continue;
 	
-		$query = "SELECT Id, Subject, CaseNumber, CreatedDate, ClosedDate, OwnerId, Status, First_Response__c, IsEscalated
+		$query = "SELECT Id, Subject, CaseNumber, CreatedDate, ClosedDate, OwnerId, Status, First_Response__c, IsEscalated, Was_Escalated__c
 							FROM Case 
 							WHERE TYPE='Technical Support' AND IsClosed = True AND ClosedDate >= $sixMonthsAgo AND Status != 'Cancelled' AND OwnerId = '$ownerId' AND (NOT Subject LIKE 'Potentially crashed%')
 							ORDER BY ClosedDate DESC";
@@ -109,6 +113,7 @@ try
 		  if (empty($assignments[$c->Id]) || empty($c->First_Response__c))
 		    continue;
 
+			$escalated = ($c->fields->IsEscalated == 'true' || $c->fields->Was_Escalated__c == 'true');
 			$firstResponse = DateTime::createFromFormat('Y-m-d\TH:i:s.000\Z', $c->First_Response__c);
 			$creationDate = DateTime::createFromFormat('Y-m-d\TH:i:s.000\Z', $c->CreatedDate);
 			$closedDate = DateTime::createFromFormat('Y-m-d\TH:i:s.000\Z', $c->ClosedDate);
@@ -128,6 +133,14 @@ try
 				@$avgUsers[$owner][$i] += $h[$i];
 				@$avgUsersMonths[$owner][$closedDate->format('Y-m')][$i] += $h[$i];
 				@$avgMonths[$closedDate->format('Y-m')][$i] += $h[$i];
+
+				if ($escalated)
+				{
+					@$avgBU[$i] += $h[$i];
+					@$avgUsersBU[$owner][$i] += $h[$i];
+					@$avgUsersMonthsBU[$owner][$closedDate->format('Y-m')][$i] += $h[$i];
+					@$avgMonthsBU[$closedDate->format('Y-m')][$i] += $h[$i];
+				}
 			}
 			
 			@$avg[3]++;
@@ -135,6 +148,14 @@ try
 			@$avgUsersMonths[$owner][$closedDate->format('Y-m')][3]++;
 			@$avgMonths[$closedDate->format('Y-m')][3]++;
 			$months[$closedDate->format('Y-m')] = $closedDate->format('Y-m');
+
+			if ($escalated)
+			{
+				@$avgBU[3]++;
+				@$avgUsersBU[$owner][3]++;
+				@$avgUsersMonthsBU[$owner][$closedDate->format('Y-m')][3]++;
+				@$avgMonthsBU[$closedDate->format('Y-m')][3]++;
+			}
 			
 			$tr = '';
 			$tr .= '<th>&nbsp;</th>';
@@ -166,13 +187,13 @@ try
 		echo '</table>';
 		echo '<br/>';
 	}
-	
+
 	echo '<br/><br/>';
-	
+
 	echo '<h1>Average first reply time after being assigned a case (hours)</h1>';
-	
+
 	ksort($months);
-	
+
 	echo '<table class="results">';
 	echo '<thead>';
 	echo '<tr>';
@@ -184,14 +205,14 @@ try
 	echo '<th>Totals</th>';
 	echo '</tr>';
 	echo '</thead>';
-	
+
 	echo '<tbody>';
-	
+
 	foreach ($supportUsers as $userId => $owner)
 	{
 		echo '<tr>';
 		echo '<th>' . $owner . '</th>';
-		
+
 		foreach ($months as $month)
 		{
 			if (isset($avgUsersMonths[$owner][$month]))
@@ -199,15 +220,15 @@ try
 			else
 				echo '<td> </td>';
 		}
-		
+
 		if (isset($avgUsers[$owner]))
 			echo '<th>' . floor($avgUsers[$owner][2] / $avgUsers[$owner][3]) . '</th>';
 		else
 			echo '<th> </th>';
-		
+
 		echo '</tr>';
 	}
-	
+
 	echo '<tr>';
 	echo '	<th>Totals</th>';
 	foreach ($months as $month)
@@ -217,13 +238,101 @@ try
 		else
 			echo '<th> </th>';
 	}
-	
+
 	echo '<th>' . floor($avg[2] / $avg[3]) . '</th>';
 	echo '</tr>';
-	
+
 	echo '</tbody>';
 	echo '</table>';
-} 
+
+	echo '<br/><br/>';
+
+	echo '<h1>.... Only for BU priorities</h1>';
+
+	echo '<table class="results">';
+	echo '<thead>';
+	echo '<tr>';
+	echo '	<th>Staff</th>';
+	foreach ($months as $month)
+	{
+		echo '<th>' . $month . '</th>';
+	}
+	echo '<th>Totals</th>';
+	echo '</tr>';
+	echo '</thead>';
+
+	echo '<tbody>';
+
+	foreach ($supportUsers as $userId => $owner)
+	{
+		echo '<tr>';
+		echo '<th>' . $owner . '</th>';
+
+		foreach ($months as $month)
+		{
+			if (isset($avgUsersMonthsBU[$owner][$month]))
+				echo '<td>' . floor($avgUsersMonthsBU[$owner][$month][2] / $avgUsersMonthsBU[$owner][$month][3]) . '</td>';
+			else
+				echo '<td> </td>';
+		}
+
+		if (isset($avgUsersBU[$owner]))
+			echo '<th>' . floor($avgUsersBU[$owner][2] / $avgUsersBU[$owner][3]) . '</th>';
+		else
+			echo '<th> </th>';
+
+		echo '</tr>';
+	}
+
+	echo '<tr>';
+	echo '	<th>Totals</th>';
+	foreach ($months as $month)
+	{
+		if (isset($avgMonthsBU[$month]))
+			echo '<th>' . floor($avgMonthsBU[$month][2] / $avgMonthsBU[$month][3]) . '</th>';
+		else
+			echo '<th> </th>';
+	}
+
+	echo '<th>' . floor($avgBU[2] / $avgBU[3]) . '</th>';
+	echo '</tr>';
+
+	echo '</tbody>';
+	echo '</table>';
+
+	echo '<br/><br/>';
+
+	echo '<h1>Average delay between case creation and assignment</h1>';
+
+	echo '<table class="results">';
+	echo '<thead>';
+	echo '<tr>';
+	foreach ($months as $month)
+	{
+		echo '<th>' . $month . '</th>';
+	}
+	echo '<th>Totals</th>';
+	echo '</tr>';
+
+	echo '<tr>';
+
+	foreach ($months as $month)
+	{
+		if (isset($avgMonths[$month]))
+			echo '<td>' . floor($avgMonths[$month][0] / $avgMonths[$month][3]) . '</td>';
+		else
+			echo '<td> </td>';
+	}
+
+	if (isset($avg[$owner]))
+		echo '<th>' . floor($avg[0] / $avg[3]) . '</th>';
+	else
+		echo '<th> </th>';
+
+	echo '</tr>';
+	echo '</tbody>';
+	echo '</table>';
+}
 catch (Exception $e) 
 {
   var_dump($e);
