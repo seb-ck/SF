@@ -12,6 +12,7 @@ $tasks = array(
 	'spiras' => 'every monday',
 	'spam' => 'every day',
 	'picking' => 'every friday',
+	'prios' => 'every day',
 //	'surveys' => 'every day',
 );
 
@@ -66,6 +67,13 @@ function picking()
 	global $SITE_URL;
 
 	file_get_contents($SITE_URL . 'picking.php?mail=1');
+}
+
+function prios()
+{
+	global $SITE_URL;
+
+	file_get_contents($SITE_URL . 'prios.php?mail=1');
 }
 
 // Default: just list the tasks, don't actually do anything
@@ -127,7 +135,7 @@ switch (date('w'))
 }
 
 // Finally, run the everyday tasks (except spam, do it at the very end)
-
+prios();
 
 // Send attachments by email
 if (!empty($attachments) && !empty($EMAIL_RECIPIENTS))

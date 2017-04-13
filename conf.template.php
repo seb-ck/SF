@@ -9,6 +9,7 @@ $SPIRA_DATABASE = '';
 
 $EMAIL_RECIPIENTS = array();
 $PICKING_RECIPIENTS = array();
+$PRIOS_RECIPIENTS = array();
 $SMTP_HOST = '';
 
 $SITE_URL = '';

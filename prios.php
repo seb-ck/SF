@@ -7,7 +7,7 @@ if (!empty($_GET['mail']))
 require_once('head.php');
 ?>
 
-<h1>All active BU priorities</h1>
+<h1>All ongoing BU priorities</h1>
 
 <?php
 
@@ -107,12 +107,12 @@ try
 
 	echo '</table>';
 
-	if (!empty($_GET['mail']) && isset($PICKING_RECIPIENTS))
+	if (!empty($_GET['mail']) && isset($PRIOS_RECIPIENTS))
 	{
 		$subject = 'SalesForce Weekly picking';
 		$body = ob_get_contents();
 		ob_end_clean();
-		sendMail($subject, $body, array(), $PICKING_RECIPIENTS);
+		sendMail($subject, $body, array(), $PRIOS_RECIPIENTS);
 	}
 }
 catch (Exception $e)
