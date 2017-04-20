@@ -13,6 +13,10 @@ require_once('head.php');
 
 try
 {
+
+	$spiraConnection = mssql_connect($SPIRA_HOST, $SPIRA_USERNAME, $SPIRA_PASSWORD);
+	mssql_select_db($SPIRA_DATABASE, $spiraConnection);
+
 	$cpt = 0;
 
 	$query = "SELECT Id, Subject, CaseNumber, CreatedDate, Account.Name, Owner.Alias, Status , Most_recent_reply_sent__c, Most_recent_incoming_email__c, Spira__c
