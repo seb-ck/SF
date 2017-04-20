@@ -15,7 +15,7 @@ try
 {
 	$cpt = 0;
 
-	$query = "SELECT Id, Subject, CaseNumber, CreatedDate, Account.Name, Owner.Alias, Status , Most_recent_reply_sent__c, Most_recent_incoming_email__c 
+	$query = "SELECT Id, Subject, CaseNumber, CreatedDate, Account.Name, Owner.Alias, Status , Most_recent_reply_sent__c, Most_recent_incoming_email__c, Spira__c
 						FROM Case 
 						WHERE Type='Technical Support' AND IsClosed = False AND Status != 'Cancelled' AND (IsEscalated = true OR Was_Escalated__c = true)
 						ORDER BY Most_recent_incoming_email__c DESC NULLS LAST, Most_recent_reply_sent__c DESC NULLS LAST";
@@ -33,6 +33,7 @@ try
 	echo '	<th>Subject</th>';
 	echo '	<th>Owner</th>';
 	echo '	<th>Status</th>';
+	echo '	<th>Incident status</th>';
 	echo '	<th>Account</th>';
 	echo '	<th>Creation date</th>';
 	echo '	<th>Latest staff reply</th>';
@@ -50,6 +51,10 @@ try
 			$tr .= '<td>' . $c->fields->Subject . '</td>';
 		$tr .= '<td>' . $c->fields->Owner->fields->Alias . '</td>';
 		$tr .= '<td>' . $c->fields->Status . '</td>';
+
+		$spira = array_map('trim', preg_split('/([, \s])+/', $c->fields->SPIRA__c));
+		list($spiraHtml, $releaseHtml, $allClosed, $foundIncidents, $minStatus, $releaseDates) = parseIncidents($spira);
+		$tr .= '<td>' . $spiraHtml . '</td>';
 
 		if (!empty($c->fields->Account->fields->Name))
 			$tr .= '<td>' . $c->fields->Account->fields->Name . '</td>';
