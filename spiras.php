@@ -40,18 +40,24 @@ try
 		$casesIds []= $record->Id;
 	}
 
-	$parentIds = implode("', '", $casesIds);
+	$parts = array_chunk($casesIds, 1000);
 
-	$results = $mySforceConnection->retrieve('Id, Subject, CaseNumber, LASTMODIFIEDDATE, CreatedDate, OwnerId, SPIRA__c, Status', 'Case', $casesIds);
-	for ($i=0; $i<count($results); $i++)
+	foreach ($parts as $ids)
 	{
-		$cases[$results[$i]->Id] = $results[$i];
-		$cases[$results[$i]->Id]->maxDate = null;
+		$parentIds = implode("', '", $ids);
 
-		if ($results[$i]->fields->OwnerId)
+
+		$results = $mySforceConnection->retrieve('Id, Subject, CaseNumber, LASTMODIFIEDDATE, CreatedDate, OwnerId, SPIRA__c, Status', 'Case', $ids);
+		for ($i=0; $i<count($results); $i++)
 		{
-			$ownerIds[$results[$i]->fields->OwnerId] = false;
-			$casesPerOwner[$results[$i]->fields->OwnerId] []= $results[$i]->Id;
+			$cases[$results[$i]->Id] = $results[$i];
+			$cases[$results[$i]->Id]->maxDate = null;
+	
+			if ($results[$i]->fields->OwnerId)
+			{
+				$ownerIds[$results[$i]->fields->OwnerId] = false;
+				$casesPerOwner[$results[$i]->fields->OwnerId] []= $results[$i]->Id;
+			}
 		}
 	}
 
