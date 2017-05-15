@@ -11,7 +11,7 @@ $tasks = array(
 	'cases_and_emails' => 'every monday',
 	'spiras' => 'every monday',
 	'spam' => 'every day',
-	'picking' => 'every friday',
+	'picking' => 'every wednesday',
 	'prios' => 'every day',
 //	'surveys' => 'every day',
 );

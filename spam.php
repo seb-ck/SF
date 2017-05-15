@@ -15,6 +15,7 @@ header('Content-Type: text/html; charset=utf-8');
 <?php
 
 set_time_limit(0);
+ini_set('default_socket_timeout', 600);
 
 require_once('conf.php');
 
@@ -62,25 +63,23 @@ try
 			$mySforceConnection->delete($ids);
 	
 	
-	
-	
-	$query = "SELECT Id FROM EmailMessage WHERE Subject LIKE 'New case email notification. Case number %'";
-	$response = $mySforceConnection->query($query);
-	
-	$ids = array();
-	foreach ($response as $em) 
-	{
-			$ids []= $em->Id;
-			
-			if (count($ids) == 50)
-			{
-				$mySforceConnection->delete($ids);
-				$ids = array();
-			}
-		}
-		
-		if (!empty($ids))
-			$mySforceConnection->delete($ids);
+    do
+    {
+      $query    = "SELECT Id FROM EmailMessage WHERE Subject LIKE 'New case email notification. Case number %' LIMIT 100 OFFSET 0";
+      $response = $mySforceConnection->query($query);
+
+      $ids = array();
+      foreach ($response as $em)
+      {
+        $ids [] = $em->Id;
+      }
+
+      if (!empty($ids))
+      {
+        $mySforceConnection->delete($ids);
+      }
+    }
+    while ($response->size > 0);
 		
 		header('location: spam.php');
 		exit;
@@ -112,5 +111,5 @@ try
 } 
 catch (Exception $e) 
 {
-  var_dump($e);
+  header('location: ' . $_SERVER['REQUEST_URI']);
 }
