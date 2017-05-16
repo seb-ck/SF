@@ -56,7 +56,7 @@ try
 
 	$parentIds = implode("', '", $casesIds);
 
-	$results = $mySforceConnection->retrieve('Id, Subject, CaseNumber, LASTMODIFIEDDATE, CreatedDate, OwnerId, AccountId, Status, ISESCALATED', 'Case', $casesIds);
+	$results = $mySforceConnection->retrieve('Id, Subject, CaseNumber, LASTMODIFIEDDATE, CreatedDate, OwnerId, AccountId, Status, ISESCALATED, Ingoing_Emails_Count__c', 'Case', $casesIds);
 	for ($i=0; $i<count($results); $i++)
 	{
 		$cases[$results[$i]->Id] = $results[$i];
@@ -137,9 +137,9 @@ try
 		echo '	<th>Account</th>';
 		echo '	<th>Creation date</th>';
 		echo '	<th>Last modification date</th>';
-		echo '	<th>Outgoing emails</th>';
 		echo '	<th>Last outgoing email</th>';
 		echo '	<th>Last incoming email</th>';
+		echo '	<th>Number of reminder emails</th>';
 		echo '	<th>Warnings</th>';
 		echo '</tr>';
 		echo '</thead>';
@@ -169,7 +169,13 @@ try
 
 			$tr .= '<td>' . str_replace(array('T', '.000Z'), array(' ', ''), $c->fields->CreatedDate) . '</td>';
 			$tr .= '<td>' . str_replace(array('T', '.000Z'), array(' ', ''), $c->fields->LastModifiedDate) . '</td>';
-			$tr .= '<td>' . $c->countEmails . '</td>';
+
+			$reminders = (int)$c->fields->Ingoing_Emails_Count__c;
+
+			if ($reminders < 2)
+				$reminders = '<td style="text-align: center">' . $reminders . '</td>';
+			else
+				$reminders = '<td style="font-weight: bold; text-align: center; font-size: 15px;">' . $reminders . '</td>';
 
 			if ($c->maxOutgoingDate)
 			{
@@ -189,13 +195,14 @@ try
 				if ($diff < 7)
 				{
 					if ($isEscalated)
-						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . '<td align="center"><img src="./images/red_arrow.png" title="Keyze has been escalated" /></td></tr>';
+						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . $reminders . '<td align="center"><img src="./images/red_arrow.png" title="Keyze has been escalated" /></td></tr>';
 					else if ($viewAll)
-						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . '<td></td></tr>';
+						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . $reminders . '<td></td></tr>';
 					
 					continue;
 				}
 
+				$tr .= $reminders;
 
 				if ($c->fields->Status == 'Waiting consultant')
 				{
@@ -240,9 +247,9 @@ try
 				if ($diff < 2)
 				{
 					if ($isEscalated)
-						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . '<td></td><td></td><td align="center"><img src="./images/red_arrow.png" title="Keyze has been escalated" /></td></tr>';
+						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . '<td></td><td></td>' . $reminders . '<td align="center"><img src="./images/red_arrow.png" title="Keyze has been escalated" /></td></tr>';
 					else if ($viewAll)
-						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . '<td></td><td></td><td></td></tr>';
+						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . '<td></td><td></td>' . $reminders . '<td></td></tr>';
 					continue;
 				}
 
@@ -257,6 +264,8 @@ try
 				{
 					$tr .= '<td></td>';
 				}
+
+				$tr .= $reminders;
 
 				if ($diff < 5)
 				{
