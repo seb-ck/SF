@@ -1,42 +1,46 @@
 <?php
 require_once('bootstrap.php');
 require_once('head.php');
+
+$d2 = new DateTime();
+$d2->sub(new DateInterval('P15D'));
+$d2 = $d2->format('Y-m-d\TH:i:s\Z');
+
+$viewAll = !empty($_GET['all']);
+$wc = (!empty($_GET['wc']) ? " OR (Status = 'Waiting Consultant'" . ($viewAll ? " AND LastModifiedDate <= $d2)" : ')') : '');
+$wb = (!empty($_GET['wb']) ? " OR Status LIKE 'Waiting Bug%'" : '');
+$filter = "(Status IN ('Open', 'Assigned')$wc $wb)";
+$name = !empty($_GET['name']) ? preg_replace("/[^a-zA-Z0-9]+/", "", $_GET['name']) : '';
+
 ?>
 
-<h1>SLA Warnings board</h1>
+  <h1 style="float: left;">SLA Warnings board</h1>
+
+  <form method="get" id="warningsForm">
+    <?php if ($name) echo '<input type="hidden" name="name" value="' . $name . '" />' ?>
+
+    <div style="float: right; text-align: left; white-space: nowrap; border: 1px solid #000; padding: 10px; margin: 10px;">
+      <span><input type="checkbox" name="all" id="all" value="1" <?= (!empty($_GET['all']) ? 'checked="checked"' : '') ?> onclick="this.form.submit()" /><label for="all">Show ongoing cases without warning</label></span>
+      <span><input type="checkbox" name="wc" id="wc" value="1" <?= (!empty($_GET['wc']) ? 'checked="checked"' : '') ?> onclick="this.form.submit()" /><label for="wc">Show cases "Waiting consultant"</label></span>
+      <span><input type="checkbox" name="wb" id="wb" value="1" <?= (!empty($_GET['wb']) ? 'checked="checked"' : '') ?> onclick="this.form.submit()" /><label for="wb">Show cases "Waiting bug"</label></span>
+    </div>
+  </form>
 
 <?php
 
 try
 {
-	$viewAll = !empty($_GET['full']);
-	
 	$filterOwner = '';
-	if (!empty($_GET['name']))
+	if ($name)
 	{
-		$owner = $mySforceConnection->query("SELECT Id FROM User WHERE Alias='" . strtoupper(filter_input(INPUT_GET, 'name', FILTER_SANITIZE_STRING)) . "'");
+		$owner = $mySforceConnection->query("SELECT Id FROM User WHERE Alias='" . $name . "'");
 		foreach ($owner as $o)
 		{
 			$filterOwner = " AND OwnerId = '{$o->Id}'";
 		}
 	}
 
-	$d2 = new DateTime();
-	$d2->sub(new DateInterval('P15D'));
-	$d2 = $d2->format('Y-m-d\TH:i:s\Z');
-
-	$filter = '';
-
-	if (!empty($_GET['all']))
-	{
-		$filter = "(Status IN ('Open', 'Assigned') OR (Status = 'Waiting Consultant' AND LastModifiedDate <= $d2))";
-	}
-	else
-	{
-		$filter = "(Status IN ('Open', 'Assigned'))";
-	}
-
-	$query = "SELECT Id FROM Case WHERE Type='Technical Support' AND $filter AND OwnerId != '00G240000014Hsp' $filterOwner ORDER BY LastModifiedDate DESC";
+	$query = "SELECT Id FROM Case WHERE Type='Technical Support' AND $filter AND OwnerId != '00G240000014Hsp' $filterOwner ORDER BY Global_priority__c DESC";
 	$response = $mySforceConnection->query($query);
 	$parentIds = '';
 	$casesIds = array();
@@ -56,7 +60,7 @@ try
 
 	$parentIds = implode("', '", $casesIds);
 
-	$results = $mySforceConnection->retrieve('Id, Subject, CaseNumber, LASTMODIFIEDDATE, CreatedDate, OwnerId, AccountId, Status, ISESCALATED, Ingoing_Emails_Count__c', 'Case', $casesIds);
+	$results = $mySforceConnection->retrieve('Id, Subject, CaseNumber, LASTMODIFIEDDATE, CreatedDate, OwnerId, AccountId, Status, ISESCALATED, Ingoing_Emails_Count__c, Global_Priority__c', 'Case', $casesIds);
 	for ($i=0; $i<count($results); $i++)
 	{
 		$cases[$results[$i]->Id] = $results[$i];
@@ -141,6 +145,7 @@ try
 		echo '	<th>Last incoming email</th>';
 		echo '	<th>Number of reminder emails</th>';
 		echo '	<th>Warnings</th>';
+		echo '	<th>Priority</th>';
 		echo '</tr>';
 		echo '</thead>';
 
@@ -177,6 +182,16 @@ try
 			else
 				$reminders = '<td style="font-weight: bold; text-align: center; font-size: 15px;">' . $reminders . '</td>';
 
+			$priority = (int)$c->fields->Global_priority__c;
+			if ($priority <= 10)
+			  $priority = '<td style="text-align: center" title="' . $priority . '"><img src="images/thermo1.png" height="32" /></td>';
+			else if ($priority <= 20)
+			  $priority = '<td style="text-align: center" title="' . $priority . '"><img src="images/thermo2.png" height="32" /></td>';
+			else if ($priority <= 30)
+			  $priority = '<td style="text-align: center" title="' . $priority . '"><img src="images/thermo3.png" height="32" /></td>';
+			else
+			  $priority = '<td style="text-align: center" title="' . $priority . '"><img src="images/thermo4.png" height="32" /></td>';
+
 			if ($c->maxOutgoingDate)
 			{
 				$maxOutgoingDate = DateTime::createFromFormat('Y-m-d\TH:i:s.000\Z', $c->maxOutgoingDate);
@@ -185,7 +200,7 @@ try
 				if ($c->maxIncomingDate)
 				{
 					$maxIncomingDate = DateTime::createFromFormat('Y-m-d\TH:i:s.000\Z', $c->maxIncomingDate);
-					$tr .= '<td>' . $maxIncomingDate->format('Y-m-d H:i:s') . '</td>';
+					$tr .= '<td>' . $maxIncomingDate->format('Y-m-d H:i:s') . '</td>'; 
 				}
 				else
 					$tr .= '<td></td>';
@@ -194,17 +209,23 @@ try
 
 				if ($diff < 7)
 				{
-					if ($isEscalated)
-						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . $reminders . '<td align="center"><img src="./images/red_arrow.png" title="Keyze has been escalated" /></td></tr>';
+					if (strpos($c->fields->Status, 'Waiting bug') === 0)
+						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . $reminders . '<td align="center"><img src="./images/bug_green.png" title="Keyze is waiting for a bug to be fixed and delivered" /></td>' . $priority . '</tr>';
+					else if ($isEscalated)
+						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . $reminders . '<td align="center"><img src="./images/red_arrow.png" title="Keyze has been escalated" /></td>' . $priority . '</tr>';
 					else if ($viewAll)
-						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . $reminders . '<td></td></tr>';
+						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . $reminders . '<td></td>' . $priority . '</tr>';
 					
 					continue;
 				}
 
 				$tr .= $reminders;
 
-				if ($c->fields->Status == 'Waiting consultant')
+				if (strpos($c->fields->Status, 'Waiting bug') === 0)
+        {
+					$tr .= '<td align="center"><img src="./images/bug_green.png" title="Keyze is waiting for a bug to be fixed and delivered" /></td>';
+        }
+				else if ($c->fields->Status == 'Waiting consultant')
 				{
 					if ($diff < 60)
 					{
@@ -247,9 +268,9 @@ try
 				if ($diff < 2)
 				{
 					if ($isEscalated)
-						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . '<td></td><td></td>' . $reminders . '<td align="center"><img src="./images/red_arrow.png" title="Keyze has been escalated" /></td></tr>';
+						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . '<td></td><td></td>' . $reminders . '<td align="center"><img src="./images/red_arrow.png" title="Keyze has been escalated" /></td>' . $priority . '</tr>';
 					else if ($viewAll)
-						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . '<td></td><td></td>' . $reminders . '<td></td></tr>';
+						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . '<td></td><td></td>' . $reminders . '<td></td>' . $priority . '</tr>';
 					continue;
 				}
 
@@ -278,6 +299,8 @@ try
 					$totals['alert']++;
 				}
 			}
+
+			$tr .= $priority;
 
 			$tr .= '</tr>';
 

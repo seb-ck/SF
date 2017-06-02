@@ -12,6 +12,8 @@ header('Content-Type: text/html; charset=utf-8');
 		* { font-size: 13px; font-family: "Trebuchet MS", Helvetica, sans-serif; }
 		h2 a { font-size: 1.5em; }
 		h1 { font-size: 2.5em; }
+    #warningsForm span { height: 20px; line-height: 20px; margin-right: 20px; }
+    #warningsForm label { font-size: 14px; }
 	</style>
 </head>
 
