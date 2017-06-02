@@ -61,11 +61,16 @@ try
 		
 		if (!empty($ids))
 			$mySforceConnection->delete($ids);
-	
+		
+		// Limit the dates for email messages to avoid searching too much volume
+		$d1 = new DateTime();
+		$d1->setTime(0, 0, 0);
+		$d1->sub(new DateInterval('P5D'));
+		$d1 = $d1->format('Y-m-d\TH:i:s\Z');
 	
     do
     {
-      $query    = "SELECT Id FROM EmailMessage WHERE Subject LIKE 'New case email notification. Case number %' LIMIT 100 OFFSET 0";
+      $query    = "SELECT Id FROM EmailMessage WHERE CreatedDate >= $d1 AND Subject LIKE 'New case email notification. Case number %' LIMIT 100 OFFSET 0";
       $response = $mySforceConnection->query($query);
 
       $ids = array();
@@ -111,5 +116,5 @@ try
 } 
 catch (Exception $e) 
 {
-  header('location: ' . $_SERVER['REQUEST_URI']);
+  header('location: spam.php');
 }
