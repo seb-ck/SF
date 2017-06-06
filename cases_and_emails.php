@@ -7,9 +7,10 @@ $d2->sub(new DateInterval('P15D'));
 $d2 = $d2->format('Y-m-d\TH:i:s\Z');
 
 $viewAll = !empty($_GET['all']);
+$all = $viewAll ? ", 'On hold'" :  '';
 $wc = (!empty($_GET['wc']) ? " OR (Status = 'Waiting Consultant'" . ($viewAll ? " AND LastModifiedDate <= $d2)" : ')') : '');
 $wb = (!empty($_GET['wb']) ? " OR Status LIKE 'Waiting Bug%'" : '');
-$filter = "(Status IN ('Open', 'Assigned')$wc $wb)";
+$filter = "(Status IN ('Open', 'Assigned'$all)$wc $wb)";
 $name = !empty($_GET['name']) ? preg_replace("/[^a-zA-Z0-9]+/", "", $_GET['name']) : '';
 
 ?>
@@ -51,7 +52,10 @@ try
 	$accounts = array();
 	$accountIds = array();
 	$now = new DateTime();
+
 	$totals = array('alert' => 0, 2 => 0, 7 => 0, 14 => 0, 31 => 0, 'feedback' => 0, 'trash' => 0);
+	if ($wb)
+		$totals['bug_green'] = 0;
 
 	foreach ($response as $record)
 	{
@@ -210,7 +214,10 @@ try
 				if ($diff < 7)
 				{
 					if (strpos($c->fields->Status, 'Waiting bug') === 0)
-						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . $reminders . '<td align="center"><img src="./images/bug_green.png" title="Keyze is waiting for a bug to be fixed and delivered" /></td>' . $priority . '</tr>';
+          {
+            echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . $reminders . '<td align="center"><img src="./images/bug_green.png" title="Keyze is waiting for a bug to be fixed and delivered" /></td>' . $priority . '</tr>';
+            $totals['bug_green']++;
+					}
 					else if ($isEscalated)
 						echo '<tr' . ($cpt++%2 ? ' class="odd"' : '') . '>' . $tr . $reminders . '<td align="center"><img src="./images/red_arrow.png" title="Keyze has been escalated" /></td>' . $priority . '</tr>';
 					else if ($viewAll)
@@ -224,6 +231,7 @@ try
 				if (strpos($c->fields->Status, 'Waiting bug') === 0)
         {
 					$tr .= '<td align="center"><img src="./images/bug_green.png" title="Keyze is waiting for a bug to be fixed and delivered" /></td>';
+					$totals['bug_green']++;
         }
 				else if ($c->fields->Status == 'Waiting consultant')
 				{
