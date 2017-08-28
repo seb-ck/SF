@@ -2,20 +2,34 @@
 require_once('bootstrap.php');
 require_once('head.php');
 
+$name = !empty($_GET['name']) ? preg_replace("/[^a-zA-Z0-9]+/", "", $_GET['name']) : '';
+
 ?>
 
-  <h1>Level 3 backlog</h1>
+  <h1 style="float: left;">Level 3 backlog</h1>
+
+    <form method="get" id="warningsForm">
+      <?php if ($name) echo '<input type="hidden" name="name" value="' . $name . '" />' ?>
+
+      <div style="float: right; text-align: left; white-space: nowrap; border: 1px solid #000; padding: 10px; margin: 10px;">
+        <span><input type="checkbox" name="all" id="all" value="1" <?= (!empty($_GET['all']) ? 'checked="checked"' : '') ?> onclick="this.form.submit()" /><label for="all">Show completed tasks</label></span>
+      </div>
+    </form>
 
 <?php
 
 try
 {
+  $all = empty($_GET['all']) ? "AND Status__c != 'Completed' AND Status__c != 'Cancelled'" : '';
+  $alias = $name ? " AND Owner__r.Alias = '$name'" : '';
+
 	$query = "SELECT Status__c, CreatedBy.Alias, Minutes__c, Owner__r.Alias,
                 Case__r.CaseNumber, Case__r.Subject, Case__r.Owner.Alias, Case__r.Status, Case__r.IsEscalated,
-                Case__r.Account.Name, Case__r.CreatedDate
+                Case__r.Account.Name, Case__r.CreatedDate, Case__r.Id
             FROM Timesheet__c
             WHERE ((Status__c != '' AND Status__c != '-') OR Owner__r.Alias = 'SF')
-              AND Status__c != 'Completed' AND Status__c != 'Cancelled'
+              $all
+              $alias
             ORDER BY Owner__r.Alias";
 
 	$response = $mySforceConnection->query($query);
@@ -74,7 +88,7 @@ try
 
 			$tr .= '<td>' . str_replace(array('T', '.000Z'), array(' ', ''), $c->fields->CreatedDate) . '</td>';
       $tr .= '<td>' . $ts->fields->Status__c . '</td>';
-			$tr .= '<td>' . $ts->fields->Minutes__c . '</td>';
+			$tr .= '<td>' . (int)$ts->fields->Minutes__c . '</td>';
 
 			$tr .= '</tr>';
 
