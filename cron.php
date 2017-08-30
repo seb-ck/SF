@@ -6,13 +6,14 @@ set_time_limit(0);
 
 @mkdir('pdf');
 
-// Set the list of tasks
+// Describe the list of tasks
 $tasks = array(
 	'cases_and_emails' => 'every monday',
 	'spiras' => 'every monday',
 	'spam' => 'every day',
 	'picking' => 'every wednesday',
 	'prios' => 'every day',
+	'subscriptions' => 'every sunday',
 //	'surveys' => 'every day',
 );
 
@@ -52,14 +53,27 @@ function spiras()
 function spam()
 {
 	global $SITE_URL;
-	
+
 	$ctx = stream_context_create(array('http'=>
-    array(
-			'timeout' => 600,
-		)
+																			 array(
+																				 'timeout' => 600,
+																			 )
 	));
 
 	file_get_contents($SITE_URL . 'spam.php?purge=1', false, $ctx);
+}
+
+function subscriptions()
+{
+	global $SITE_URL;
+
+	$ctx = stream_context_create(array('http'=>
+																			 array(
+																				 'timeout' => 600,
+																			 )
+	));
+
+	file_get_contents($SITE_URL . 'subscriptions.php?purge=1', false, $ctx);
 }
 
 function picking()
@@ -107,6 +121,7 @@ if (isset($_GET['force']))
 switch (date('w'))
 {
 	case 0:
+		subscriptions();
 		break;
 	
 	case 1:
