@@ -90,7 +90,7 @@ function prios()
 	file_get_contents($SITE_URL . 'prios.php?mail=1');
 }
 
-function survey()
+function surveys()
 {
 	global $SITE_URL;
 
@@ -157,7 +157,7 @@ switch (date('w'))
 }
 
 // Finally, run the everyday tasks (except spam, do it at the very end)
-survey();
+surveys();
 prios();
 
 // Send attachments by email
