@@ -14,7 +14,7 @@ $tasks = array(
 	'picking' => 'every wednesday',
 	'prios' => 'every day',
 	'subscriptions' => 'every sunday',
-//	'surveys' => 'every day',
+	'surveys' => 'every day',
 );
 
 $attachments = array();
@@ -150,6 +150,7 @@ switch (date('w'))
 }
 
 // Finally, run the everyday tasks (except spam, do it at the very end)
+survey();
 prios();
 
 // Send attachments by email
