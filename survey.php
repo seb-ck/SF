@@ -1,55 +1,19 @@
 <?php
+require_once('bootstrap.php');
+require_once('head.php');
 
 if (!empty($_GET['send']))
 {
 	ob_start();
 }
 
-header('Content-Type: text/html; charset=utf-8');
-?>
-
-<style>
-	#results, #results td, #results th { border: 1px solid grey; border-collapse: collapse; padding: 5px; }
-	#results { width: 100%; }
-	#results th { background: lightgrey; }
-	#results .odd td { background: #eee; }
-	* { font-size: 13px; }
-	h2 a { font-size: 1.5em; }
-	h1 { font-size: 2.5em; }
-</style>
-
-<?php
-
-set_time_limit(0);
-
-require_once('conf.php');
-
-define("SOAP_CLIENT_BASEDIR", "Force.com-Toolkit-for-PHP-master/soapclient");
-require_once (SOAP_CLIENT_BASEDIR.'/SforcePartnerClient.php');
-require_once (SOAP_CLIENT_BASEDIR.'/SforceHeaderOptions.php');
-
-/*
-	Case fields:
-	ID	ISDELETED	CASENUMBER	CONTACTID	ACCOUNTID	COMMUNITYID	PARENTID	SUPPLIEDNAME	SUPPLIEDEMAIL	SUPPLIEDPHONE	SUPPLIEDCOMPANY	TYPE	RECORDTYPEID	STATUS	REASON	ORIGIN	SUBJECT	PRIORITY	DESCRIPTION	ISCLOSED	CLOSEDDATE	ISESCALATED	OWNERID	CREATEDDATE	CREATEDBYID	LASTMODIFIEDDATE	LASTMODIFIEDBYID	SYSTEMMODSTAMP	LASTVIEWEDDATE	LASTREFERENCEDDATE	CREATORFULLPHOTOURL	CREATORSMALLPHOTOURL	CREATORNAME	
-	THEME__C	PRODUCT_VERSION__C	ACCOUNT_NAME_TEMP__C	CASE_IMPORT_ID__C	SPIRA__C	MANTIS__C	CONTACT_EMAIL_IMPORT__C	GEOGRAPHICAL_ZONE__C	NO_TYPE_REFRESH__C	ACTIVITY__C	BACK_IN_QUEUE__C	TIMESPENT_MN__C	SURVEY_SENT__C	MOST_RECENT_REPLY_SENT__C	MOST_RECENT_INCOMING_EMAIL__C	NEW_EMAIL__C	REQUEST_TYPE__C	URL__C	LOGIN__C	PASSWORD__C	BROWSER__C	REPRODUCTION_STEP__C	ASSOCIATED_DEADLINE__C	RELATED_TICKET__C	CC__C	CATEGORIES__C	BILLABLE__C	LANGUAGE__C	KAYAKO_ID__C	COMMENTAIRE_SURVEY__C	IDSURVEY__C	TIME_SPENT_BILLABLE__C	SURVEY_SENT_DATE__C	CONTACT_EMAIL_FOR_INTERNAL_USE__C	OPENED_ON_BEHALF_CUSTOMER__C	BU__C
-
-	EmailMessage fields:
-	ID	PARENTID	ACTIVITYID	CREATEDBYID	CREATEDDATE	LASTMODIFIEDDATE	LASTMODIFIEDBYID	SYSTEMMODSTAMP	TEXTBODY	HTMLBODY	HEADERS	SUBJECT	FROMNAME	FROMADDRESS	TOADDRESS	CCADDRESS	BCCADDRESS	INCOMING	HASATTACHMENT	STATUS	MESSAGEDATE	ISDELETED	REPLYTOEMAILMESSAGEID	ISEXTERNALLYVISIBLE																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																								
-
-
-*/
-
 try 
 {
-  $mySforceConnection = new SforcePartnerClient();
-  $mySoapClient = $mySforceConnection->createConnection(SOAP_CLIENT_BASEDIR.'/partner.wsdl.xml');
-  $mylogin = $mySforceConnection->login($USERNAME, $PASSWORD);
-	
 	$query = "SELECT id, Name, title__c FROM survey__c WHERE Actif__c =true";
 	$response = $mySforceConnection->query($query);
-	
+
 	$surveyId = $response->current()->Id;
-	
+
 	$d1 = new DateTime();
 	$d1->sub(new DateInterval('P1D'));
 	$d1 = $d1->format('Y-m-d\TH:i:s\Z');	// 2016-01-01T00:00:00Z
@@ -72,6 +36,9 @@ try
 	{
 		$casesIds []= $record->Id;
 	}
+
+	if (empty($casesIds))
+		exit;
 	
 	$parentIds = implode("', '", $casesIds);
 	
@@ -159,4 +126,7 @@ catch (Exception $e)
   var_dump($e);
 }
 
-ob_end_clean();
+if (!empty($_GET['send']))
+{
+	ob_end_clean();
+}
