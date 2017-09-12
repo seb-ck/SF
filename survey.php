@@ -19,10 +19,10 @@ try
 	$d1 = $d1->format('Y-m-d\TH:i:s\Z');	// 2016-01-01T00:00:00Z
 	
 	$d2 = new DateTime();
-	$d2->sub(new DateInterval('P8D'));
+	$d2->sub(new DateInterval('P5D'));
 	$d2 = $d2->format('Y-m-d\TH:i:s\Z');
 	
-	$query = "SELECT Id FROM Case WHERE TYPE='Technical Support' AND Status = 'Closed' AND Survey_Sent__c = False AND ClosedDate >= $d2 AND ClosedDate <= $d1 AND Contact.Email != '' ORDER BY ClosedDate DESC";
+	$query = "SELECT Id FROM Case WHERE TYPE IN ('Technical Support', 'IT Exploitation') AND Status = 'Closed' AND Survey_Sent__c = False AND ClosedDate >= $d2 AND ClosedDate <= $d1 AND Contact.Email != '' ORDER BY ClosedDate DESC";
 	$response = $mySforceConnection->query($query);
 	$parentIds = '';
 	$casesIds = array();
