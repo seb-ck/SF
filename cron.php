@@ -90,6 +90,13 @@ function prios()
 	file_get_contents($SITE_URL . 'prios.php?mail=1');
 }
 
+function survey()
+{
+	global $SITE_URL;
+
+	file_get_contents($SITE_URL . 'survey.php?send=1');
+}
+
 // Default: just list the tasks, don't actually do anything
 if (!isset($_GET['run']))
 {
