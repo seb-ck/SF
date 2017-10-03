@@ -118,6 +118,7 @@ function parseIncidents($spira)
 					$releaseId = $data['VERIFIED_RELEASE_ID'];
 					$projectId = $data['PROJECT_ID'];
 					$statusName = $data['INCIDENT_STATUS_NAME'];
+					$severityName = $data['SEVERITY_NAME'];
 
 					if (empty($releaseId))
 						$releaseId = $data['RESOLVED_RELEASE_ID'];
@@ -130,6 +131,8 @@ function parseIncidents($spira)
 							$releaseDates []= $releaseDate->setTimezone(new DateTimeZone('Europe/Paris'))->format('Y-m-d');
 					}
 
+					$severity = ($severityName !== '1 - MustDo CK-BU') ? ' <img src="images/sign_warning.png" style="vertical-align: middle" title="Incident is not tagged as BU priority" />' : '';
+
 					$foundIncidents[intval($incident)] = $data['INCIDENT_STATUS_IS_OPEN_STATUS'];
 
 					$releaseHtml .= '<a href="https://thefactory.crossknowledge.com/' . $projectId . '/Release/' . intval($releaseId) . '.aspx">' . $release . '</a><br/>';
@@ -139,7 +142,7 @@ function parseIncidents($spira)
 
 					$minStatus = min($minStatus, substr($data['INCIDENT_STATUS_IS_OPEN_STATUS'], 0, 1));
 
-					$spiraHtml .= '<a href="https://thefactory.crossknowledge.com/' . $projectId . '/Incident/' . intval($incident) . '.aspx">' . intval($incident) . '</a>: ' .  $statusName . '<br/>';
+					$spiraHtml .= '<a href="https://thefactory.crossknowledge.com/' . $projectId . '/Incident/' . intval($incident) . '.aspx">' . intval($incident) . '</a>: ' .  $statusName . $severity . '<br/>';
 				}
 			}
 			else

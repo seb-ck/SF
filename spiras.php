@@ -9,6 +9,9 @@ require_once('head.php');
 try
 {
 	$spiraConnection = mssql_connect($SPIRA_HOST, $SPIRA_USERNAME, $SPIRA_PASSWORD);
+	if (!$spiraConnection)
+		die;
+
 	mssql_select_db($SPIRA_DATABASE, $spiraConnection);
 
 	$filterOwner = '';
