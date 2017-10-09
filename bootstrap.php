@@ -47,7 +47,7 @@ function sendMail($subject, $body, $attachments, $recipients)
 	$mail->send($recipients, 'smtp');
 }
 
-function parseIncidents($spira)
+function parseIncidents($spira, $showPrioInfo = false)
 {
 	$spiraHtml = '';
 	$releaseHtml = '';
@@ -131,7 +131,7 @@ function parseIncidents($spira)
 							$releaseDates []= $releaseDate->setTimezone(new DateTimeZone('Europe/Paris'))->format('Y-m-d');
 					}
 
-					$severity = ($severityName !== '1 - MustDo CK-BU') ? ' <img src="images/sign_warning.png" style="vertical-align: middle" title="Incident is not tagged as BU priority" />' : '';
+					$severity = ($showPrioInfo && $severityName !== '1 - MustDo CK-BU') ? ' <img src="images/sign_warning.png" style="vertical-align: middle" title="Incident is not tagged as BU priority" />' : '';
 
 					$foundIncidents[intval($incident)] = $data['INCIDENT_STATUS_IS_OPEN_STATUS'];
 

@@ -57,7 +57,7 @@ try
 		$tr .= '<td>' . $c->fields->Status . '</td>';
 
 		$spira = array_map('trim', preg_split('/([, \s])+/', $c->fields->SPIRA__c));
-		list($spiraHtml, $releaseHtml, $allClosed, $foundIncidents, $minStatus, $releaseDates) = parseIncidents($spira);
+		list($spiraHtml, $releaseHtml, $allClosed, $foundIncidents, $minStatus, $releaseDates) = parseIncidents($spira, true);
 		$tr .= '<td>' . $spiraHtml . '</td>';
 
 		if (!empty($c->fields->Account->fields->Name))
