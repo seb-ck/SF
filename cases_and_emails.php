@@ -8,7 +8,7 @@ $d2 = $d2->format('Y-m-d\TH:i:s\Z');
 
 $viewAll = !empty($_GET['all']);
 $all = $viewAll ? ", 'On hold'" :  '';
-$wc = (!empty($_GET['wc']) ? " OR (Status = 'Waiting Consultant'" . ($viewAll ? " AND LastModifiedDate <= $d2)" : ')') : '');
+$wc = " OR (Status = 'Waiting Consultant'" . (!$viewAll ? " AND LastModifiedDate <= $d2)" : ')');
 $wb = (!empty($_GET['wb']) ? " OR Status LIKE 'Waiting Bug%'" : '');
 $filter = "(Status IN ('Open', 'Assigned'$all)$wc $wb)";
 $name = !empty($_GET['name']) ? preg_replace("/[^a-zA-Z0-9]+/", "", $_GET['name']) : '';
@@ -22,7 +22,6 @@ $name = !empty($_GET['name']) ? preg_replace("/[^a-zA-Z0-9]+/", "", $_GET['name'
 
     <div style="float: right; text-align: left; white-space: nowrap; border: 1px solid #000; padding: 10px; margin: 10px;">
       <span><input type="checkbox" name="all" id="all" value="1" <?= (!empty($_GET['all']) ? 'checked="checked"' : '') ?> onclick="this.form.submit()" /><label for="all">Show ongoing cases without warning</label></span>
-      <span><input type="checkbox" name="wc" id="wc" value="1" <?= (!empty($_GET['wc']) ? 'checked="checked"' : '') ?> onclick="this.form.submit()" /><label for="wc">Show cases "Waiting consultant"</label></span>
       <span><input type="checkbox" name="wb" id="wb" value="1" <?= (!empty($_GET['wb']) ? 'checked="checked"' : '') ?> onclick="this.form.submit()" /><label for="wb">Show cases "Waiting bug"</label></span>
     </div>
   </form>
