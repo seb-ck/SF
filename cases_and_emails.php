@@ -247,7 +247,17 @@ try
 				}
 				else
 				{
-					if ($diff > 30)
+					if ($diff > 99)
+					{
+						$tr .= '<td align="center"><img src="./images/100.png" title="Last staff reply was more than a hundred days ago" width=32 height=32 /></td>';
+						$totals[31]++;
+					}
+					else if ($diff > 60)
+					{
+						$tr .= '<td align="center"><img src="./images/60.png" title="Last staff reply was over two months ago" width=32 height=32 /></td>';
+						$totals[31]++;
+					}
+					else if ($diff > 30)
 					{
 						$tr .= '<td align="center"><img src="./images/31.png" title="Last staff reply was over a month ago" /></td>';
 						$totals[31]++;
