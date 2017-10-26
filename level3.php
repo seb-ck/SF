@@ -23,13 +23,19 @@ try
   $all = empty($_GET['all']) ? "AND Status__c != 'Completed' AND Status__c != 'Cancelled'" : '';
   $alias = $name ? " AND Owner__r.Alias = '$name'" : '';
 
+	$d = new DateTime();
+	$d->sub(new DateInterval('P6M'));
+	$d = $d->format('Y-m-d\TH:i:s\Z');
+  $date = "AND CreatedDate >= $d";
+
 	$query = "SELECT Status__c, CreatedBy.Alias, Minutes__c, Owner__r.Alias,
                 Case__r.CaseNumber, Case__r.Subject, Case__r.Owner.Alias, Case__r.Status, Case__r.IsEscalated,
-                Case__r.Account.Name, Case__r.CreatedDate, Case__r.Id
+                Case__r.Account.Name, Case__r.CreatedDate, Case__r.Id, CreatedDate
             FROM Timesheet__c
             WHERE ((Status__c != '' AND Status__c != '-') OR Owner__r.Alias = 'SF')
               $all
               $alias
+              $date
             ORDER BY Owner__r.Alias";
 
 	$response = $mySforceConnection->query($query);
@@ -56,9 +62,10 @@ try
 		echo '	<th>Case Number</th>';
 		echo '	<th>Subject</th>';
 		echo '	<th>Case Status</th>';
+		echo '	<th>Case Creation</th>';
 		echo '	<th>Account</th>';
-		echo '	<th>Creation date</th>';
 		echo '	<th>Task status</th>';
+		echo '	<th>Task creation</th>';
 		echo '	<th>Time spent</th>';
 		echo '</tr>';
 		echo '</thead>';
@@ -80,14 +87,15 @@ try
 			$tr .= '<td><a href="https://eu5.salesforce.com/' . $c->Id . '">' . $c->fields->CaseNumber . '</a>' . $escalated . '</td>';
 			$tr .= '<td>' . $c->fields->Subject . '</td>';
 			$tr .= '<td>' . $c->fields->Status . '</td>';
+			$tr .= '<td>' . str_replace(array('T', '.000Z'), array(' ', ''), $c->fields->CreatedDate) . '</td>';
 
 			if (!empty($c->fields->Account->fields->Name))
 				$tr .= '<td>' . $c->fields->Account->fields->Name . '</td>';
 			else
 				$tr .= '<td></td>';
 
-			$tr .= '<td>' . str_replace(array('T', '.000Z'), array(' ', ''), $c->fields->CreatedDate) . '</td>';
       $tr .= '<td>' . $ts->fields->Status__c . '</td>';
+			$tr .= '<td>' . str_replace(array('T', '.000Z'), array(' ', ''), $ts->fields->CreatedDate) . '</td>';
 			$tr .= '<td>' . (int)$ts->fields->Minutes__c . '</td>';
 
 			$tr .= '</tr>';
