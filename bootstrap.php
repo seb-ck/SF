@@ -208,3 +208,16 @@ function getSpiraRelease($relId) {
 	else
 		return null;
 }
+
+function getSupportUsersSelect($selected = '') {
+	global $supportUsers;
+
+	$html = '<select name="name" onchange="this.form.submit()">';
+	$html .= '<option value=""> -- </option>';
+
+	foreach ($supportUsers as $alias)
+		$html .= '<option value="' . $alias . '" ' . ($selected === $alias ? 'selected' : '') . '>' . $alias . '</option>';
+
+	$html .= '</select>';
+	return $html;
+}

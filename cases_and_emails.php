@@ -21,6 +21,7 @@ $name = !empty($_GET['name']) ? preg_replace("/[^a-zA-Z0-9]+/", "", $_GET['name'
     <?php if ($name) echo '<input type="hidden" name="name" value="' . $name . '" />' ?>
 
     <div style="float: right; text-align: left; white-space: nowrap; border: 1px solid #000; padding: 10px; margin: 10px;">
+			<span>Show only cases assigned to <?= getSupportUsersSelect($name) ?></span>
       <span><input type="checkbox" name="all" id="all" value="1" <?= (!empty($_GET['all']) ? 'checked="checked"' : '') ?> onclick="this.form.submit()" /><label for="all">Show ongoing cases without warning</label></span>
       <span><input type="checkbox" name="wb" id="wb" value="1" <?= (!empty($_GET['wb']) ? 'checked="checked"' : '') ?> onclick="this.form.submit()" /><label for="wb">Show cases "Waiting bug"</label></span>
     </div>
