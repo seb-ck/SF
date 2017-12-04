@@ -41,7 +41,8 @@ try
 		}
 	}
 
-	$query = "SELECT Id FROM Case WHERE Type='Technical Support' AND $filter AND OwnerId != '00G240000014Hsp' $filterOwner ORDER BY Global_priority__c DESC";
+	$query = "SELECT Id, Subject, CaseNumber, LASTMODIFIEDDATE, CreatedDate, Owner.Id, Status, ISESCALATED, Ingoing_Emails_Count__c, Global_Priority__c, Owner.Alias, Account.Id, Account.Name
+						FROM Case WHERE Type='Technical Support' AND $filter AND OwnerId != '00G240000014Hsp' $filterOwner ORDER BY Global_priority__c DESC";
 	$response = $mySforceConnection->query($query);
 	$parentIds = '';
 	$casesIds = array();
@@ -60,32 +61,24 @@ try
 	foreach ($response as $record)
 	{
 		$casesIds []= $record->Id;
+
+		$cases[$record->Id] = $record;
+		$cases[$record->Id]->countEmails = 0;
+		$cases[$record->Id]->maxDate = null;
+
+		if ($record->fields->Owner->Id)
+		{
+			$ownerIds[$record->fields->Owner->Id] = $record->fields->Owner->fields->Alias;
+			$casesPerOwner[$record->fields->Owner->Id] []= $record->Id;
+		}
+
+		if (!empty($record->fields->Account->Id))
+		{
+			$accountIds[$record->fields->Account->Id] = $record->fields->Account->fields->Name;
+		}
 	}
 
 	$parentIds = implode("', '", $casesIds);
-
-	$results = $mySforceConnection->retrieve('Id, Subject, CaseNumber, LASTMODIFIEDDATE, CreatedDate, OwnerId, AccountId, Status, ISESCALATED, Ingoing_Emails_Count__c, Global_Priority__c', 'Case', $casesIds);
-	for ($i=0; $i<count($results); $i++)
-	{
-		$cases[$results[$i]->Id] = $results[$i];
-		$cases[$results[$i]->Id]->countEmails = 0;
-		$cases[$results[$i]->Id]->maxDate = null;
-
-		if ($results[$i]->fields->OwnerId)
-		{
-			$ownerIds[$results[$i]->fields->OwnerId] = false;
-			$casesPerOwner[$results[$i]->fields->OwnerId] []= $results[$i]->Id;
-		}
-		if ($results[$i]->fields->AccountId)
-			$accountIds[$results[$i]->fields->AccountId] = false;
-	}
-
-	$owners = $mySforceConnection->retrieve('Alias', 'User', array_keys($ownerIds));
-	foreach ($owners as $o)
-	{
-		if (!empty($o->fields->Alias))
-			$ownerIds[$o->Id] = $o->fields->Alias;
-	}
 
 	foreach (array_keys($ownerIds) as $id)
 	{
@@ -97,13 +90,6 @@ try
 	}
 
 	asort($ownerIds);
-
-	$accounts = $mySforceConnection->retrieve('Name', 'Account', array_keys($accountIds));
-	foreach ($accounts as $a)
-	{
-		if (!empty($a->fields->Name))
-			$accountIds[$a->Id] = $a->fields->Name;
-	}
 
 	$query = "SELECT ParentId, COUNT(Id) countId, MAX(MESSAGEDATE) maxDate FROM EmailMessage WHERE ParentId IN ('$parentIds') AND Incoming=false GROUP BY ParentId";
 	$response = $mySforceConnection->query($query);
@@ -171,8 +157,8 @@ try
 			$tr .= '<td>' . $c->fields->Subject . '</td>';
 			$tr .= '<td>' . $c->fields->Status . '</td>';
 
-			if (!empty($accountIds[$c->fields->AccountId]))
-				$tr .= '<td>' . $accountIds[$c->fields->AccountId] . '</td>';
+			if (!empty($c->fields->Account) && !empty($accountIds[$c->fields->Account->Id]))
+				$tr .= '<td>' . $accountIds[$c->fields->Account->Id] . '</td>';
 			else
 				$tr .= '<td></td>';
 
