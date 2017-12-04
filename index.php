@@ -1,8 +1,6 @@
 <?php
 	require_once('conf.php');
 	require_once('head.php');
-
-	$sfUrl = 'https://eu5.salesforce.com/';
 ?>
 <div class="container">
 	<h1>SalesForce reports</h1>
@@ -19,7 +17,7 @@
 
 		foreach ($reports as $data)
 		{
-			echo '<li><a href="' . $sfUrl . $data[1] . '" target="_blank">' . $data[0] . '</a></li>';
+			echo '<li><a href="' . $SF_URL . $data[1] . '" target="_blank">' . $data[0] . '</a></li>';
 		}
 	?>
 	</ul>

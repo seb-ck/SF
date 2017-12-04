@@ -230,7 +230,7 @@ try
 			
 			$tr = '';
 			
-			$tr .= '<td><a href="https://eu5.salesforce.com/' . $c->Id . '">' . $c->fields->CaseNumber . '</a></td>';
+			$tr .= '<td><a href="' . $SF_URL . $c->Id . '">' . $c->fields->CaseNumber . '</a></td>';
 			$tr .= '<td>' . $c->fields->Subject . '</td>';
 			$tr .= '<td>' . $c->fields->Status . '</td>';
 			

@@ -48,7 +48,7 @@ try
 	{
 		$tr = '';
 
-		$tr .= '<td><a href="https://eu5.salesforce.com/' . $c->Id . '">' . $c->fields->CaseNumber . '</a></td>';
+		$tr .= '<td><a href="' . $SF_URL . $c->Id . '">' . $c->fields->CaseNumber . '</a></td>';
 		if (strlen($c->fields->Subject) > 50)
 			$tr .= '<td title="' . $c->fields->Subject . '">' . substr($c->fields->Subject, 0, 50) . '...</td>';
 		else

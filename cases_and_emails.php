@@ -164,9 +164,9 @@ try
 
 			$escalated = '';
 			if ($isEscalated)
-				$escalated = '&nbsp;<img src="https://eu5.salesforce.com/img/func_icons/util/escalation12.gif" />';
+				$escalated = '&nbsp;<img src="' . $SF_URL . 'img/func_icons/util/escalation12.gif" />';
 
-			$tr .= '<td><a href="https://eu5.salesforce.com/' . $c->Id . '">' . $c->fields->CaseNumber . '</a>' . $escalated . '</td>';
+			$tr .= '<td><a href="' . $SF_URL . $c->Id . '">' . $c->fields->CaseNumber . '</a>' . $escalated . '</td>';
 			$tr .= '<td>' . $c->fields->Subject . '</td>';
 			$tr .= '<td>' . $c->fields->Status . '</td>';
 

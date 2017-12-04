@@ -81,13 +81,13 @@ try
 			// Exact match
 			if (strtolower($acName) == $in || strtolower($acName) == $in2)
 			{
-				$account []= '<a href="https://eu5.salesforce.com/' . $acId . '">' . $acName . '</a>';
+				$account []= '<a href="' . $SF_URL . $acId . '">' . $acName . '</a>';
 				$images .= '<img src="https://cdn0.iconfinder.com/data/icons/blueberry/32/tag_green.png" title="Exact match" /> ';
 			}
 			// Exact match, except for spaces and special characters
 			else if ($acNameStripped == $in || $acNameStripped == $in2)
 			{
-				$account []= '<a href="https://eu5.salesforce.com/' . $acId . '">' . $acName . '</a>';
+				$account []= '<a href="' . $SF_URL . $acId . '">' . $acName . '</a>';
 				$images .= '<img src="https://cdn0.iconfinder.com/data/icons/blueberry/32/tag_blue.png" title="Almost exact match" /> ';
 			}
 			// Approximate match
@@ -102,7 +102,7 @@ try
 					|| stripos($acNameStripped, $in2) !== false
 					|| stripos($in2, $acNameStripped) !== false)
 				{
-					$account []= '<a href="https://eu5.salesforce.com/' . $acId . '">' . $acName . '</a>';
+					$account []= '<a href="' . $SF_URL . $acId . '">' . $acName . '</a>';
 					$images .= '<img src="https://cdn0.iconfinder.com/data/icons/blueberry/32/tag_orange.png" title="Approximate match" /> ';
 				}
 			}

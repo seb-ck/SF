@@ -87,7 +87,7 @@ try
 	foreach ($response as $c) 
 	{
 		echo '<tr>';
-		echo '<td><a href="https://eu5.salesforce.com/' . $c->Id . '">' . $c->fields->CaseNumber . '</a></td>';
+		echo '<td><a href="' . $SF_URL . $c->Id . '">' . $c->fields->CaseNumber . '</a></td>';
 		echo '<td>' . $c->fields->Subject . '</td>';
 		echo '<td>' . $c->fields->Status . '</td>';
 		echo '<td>' . str_replace(array('T', '.000Z'), array(' ', ''), $c->fields->CreatedDate) . '</td>';

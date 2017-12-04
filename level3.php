@@ -24,7 +24,7 @@ try
   $alias = $name ? " AND Owner__r.Alias = '$name'" : '';
 
 	$d = new DateTime();
-	$d->sub(new DateInterval('P6M'));
+	$d->sub(new DateInterval('P3M'));
 	$d = $d->format('Y-m-d\TH:i:s\Z');
   $date = "AND CreatedDate >= $d";
 
@@ -82,9 +82,9 @@ try
 
 			$escalated = '';
 			if ($isEscalated)
-				$escalated = '&nbsp;<img src="https://eu5.salesforce.com/img/func_icons/util/escalation12.gif" />';
+				$escalated = '&nbsp;<img src="' . $SF_URL . 'img/func_icons/util/escalation12.gif" />';
 
-			$tr .= '<td><a href="https://eu5.salesforce.com/' . $c->Id . '">' . $c->fields->CaseNumber . '</a>' . $escalated . '</td>';
+			$tr .= '<td><a href="' . $SF_URL . $c->Id . '">' . $c->fields->CaseNumber . '</a>' . $escalated . '</td>';
 			$tr .= '<td>' . $c->fields->Subject . '</td>';
 			$tr .= '<td>' . $c->fields->Status . '</td>';
 			$tr .= '<td>' . str_replace(array('T', '.000Z'), array(' ', ''), $c->fields->CreatedDate) . '</td>';
