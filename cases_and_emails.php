@@ -18,8 +18,6 @@ $name = !empty($_GET['name']) ? preg_replace("/[^a-zA-Z0-9]+/", "", $_GET['name'
   <h1 style="float: left;">SLA Warnings board</h1>
 
   <form method="get" id="warningsForm">
-    <?php if ($name) echo '<input type="hidden" name="name" value="' . $name . '" />' ?>
-
     <div style="float: right; text-align: left; white-space: nowrap; border: 1px solid #000; padding: 10px; margin: 10px;">
 			<span>Show only cases assigned to <?= getSupportUsersSelect($name) ?></span>
       <span><input type="checkbox" name="all" id="all" value="1" <?= (!empty($_GET['all']) ? 'checked="checked"' : '') ?> onclick="this.form.submit()" /><label for="all">Show ongoing cases without warning</label></span>
@@ -54,7 +52,7 @@ try
 	$accountIds = array();
 	$now = new DateTime();
 
-	$totals = array('alert' => 0, 2 => 0, 7 => 0, 14 => 0, 31 => 0, 'feedback' => 0, 'trash' => 0);
+	$totals = array('alert' => 0, 2 => 0, 7 => 0, 14 => 0, 31 => 0, 60 => 0, 100 => 0, 'feedback' => 0, 'trash' => 0);
 	if ($wb)
 		$totals['bug_green'] = 0;
 
@@ -237,12 +235,12 @@ try
 					if ($diff > 99)
 					{
 						$tr .= '<td align="center"><img src="./images/100.png" title="Last staff reply was more than a hundred days ago" width=32 height=32 /></td>';
-						$totals[31]++;
+						$totals[100]++;
 					}
 					else if ($diff > 60)
 					{
 						$tr .= '<td align="center"><img src="./images/60.png" title="Last staff reply was over two months ago" width=32 height=32 /></td>';
-						$totals[31]++;
+						$totals[60]++;
 					}
 					else if ($diff > 30)
 					{
@@ -321,17 +319,11 @@ try
 		echo '<br/>';
 	}
 
-	if (empty($_GET['all']))
-	{
-		unset($totals['feedback']);
-		unset($totals['trash']);
-	}
-
 	echo '<table width="100%">';
 	echo '<tr>';
 	foreach ($totals as $i => $count)
 	{
-		echo "<td style='font-size: 30px; line-height: 30px;' valign=middle><img src='./images/$i.png' valign=bottom /> $count cases</td>";
+		echo "<td style='font-size: 30px; line-height: 30px;' valign=middle><img src='./images/$i.png' valign=bottom width=32 height=32 /> $count cases</td>";
 	}
 	echo '</tr>';
 	echo '</table>';
